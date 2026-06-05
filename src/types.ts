@@ -39,12 +39,24 @@ export interface Source {
 }
 
 export interface ChatReference {
-  /** Text excerpt from the source. */
-  excerpt: string;
-  /** Source id this reference points to. */
-  sourceId?: string;
-  /** 1-indexed citation number assigned in answer order. */
+  /** Source UUID this reference points to. */
+  sourceId: string;
+  /** 1-indexed citation number, assigned in answer order (the inline [n] marker). */
   citationNumber?: number;
+  /** The cited passage text from the source (null for structural-anchor citations). */
+  citedText?: string;
+  /** Start char position in the source's chunked index (paired with endChar). */
+  startChar?: number;
+  /** End char position in the source's chunked index. */
+  endChar?: number;
+  /** Internal chunk id (debugging, not user-facing). */
+  chunkId?: string;
+  /** Start position in the *answer text* of the span this citation supports. */
+  answerStartChar?: number;
+  /** End position (exclusive) in the answer text. */
+  answerEndChar?: number;
+  /** Server-side relevance score, 0.0–1.0. */
+  score?: number;
 }
 
 export interface AskResult {

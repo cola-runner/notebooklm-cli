@@ -44,7 +44,8 @@ pnpm dev delete <nb_id>                         # delete a notebook (irreversibl
 pnpm dev source add <nb_id> --url https://...   # add a URL or YouTube source
 pnpm dev source add <nb_id> --text "..." --title "Notes"
 pnpm dev source list <nb_id>                    # list sources
-pnpm dev ask <nb_id> "What is this about?"      # ask a question
+pnpm dev ask <nb_id> "What is this about?"      # ask (prints answer + cited sources)
+pnpm dev ask <nb_id> "And what about that?" --conversation-id <id>   # follow-up turn
 
 # Generate & download studio artifacts
 pnpm dev generate audio <nb_id> --format deep-dive --wait   # podcast (blocks until ready)

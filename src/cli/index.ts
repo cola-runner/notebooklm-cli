@@ -327,14 +327,33 @@ program
   .command('ask <notebookId> <question>')
   .description('Ask a question about the notebook')
   .option('--storage <path>', 'Override storage_state.json path')
+  .option('--conversation-id <id>', 'Continue a conversation (id from a prior ask)')
   .option('--json', 'Output result as JSON', false)
   .action(
-    async (notebookId: string, question: string, opts: { storage?: string; json: boolean }) => {
+    async (
+      notebookId: string,
+      question: string,
+      opts: { storage?: string; json: boolean; conversationId?: string },
+    ) => {
       try {
         const client = await openClient(opts.storage);
-        const result = await client.chat.ask(notebookId, question);
+        const askOpts = opts.conversationId ? { conversationId: opts.conversationId } : {};
+        const result = await client.chat.ask(notebookId, question, askOpts);
         await client.save();
-        emit(opts, result, () => console.log(result.answer));
+        emit(opts, result, () => {
+          console.log(result.answer);
+          if (result.references.length > 0) {
+            console.log(`\nSources (${result.references.length}):`);
+            for (const ref of result.references) {
+              const n = ref.citationNumber ?? '?';
+              const snippet = ref.citedText ? ` — ${ref.citedText.slice(0, 100)}` : '';
+              console.log(`  [${n}] ${ref.sourceId}${snippet}`);
+            }
+          }
+          if (result.conversationId) {
+            console.log(`\nconversation: ${result.conversationId}`);
+          }
+        });
       } catch (err) {
         fail(opts, err);
       }
