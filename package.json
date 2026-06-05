@@ -1,7 +1,8 @@
 {
   "name": "notebooklm-node",
   "version": "0.0.1",
-  "description": "Unofficial NotebookLM client for Node.js — TypeScript port of notebooklm-py",
+  "description": "Agent-first unofficial NotebookLM client for Node.js — JSON CLI, citations, multi-turn chat, all studio artifacts, research & notes",
+  "keywords": ["notebooklm", "google-notebooklm", "cli", "agent", "llm", "typescript", "unofficial"],
   "type": "module",
   "bin": {
     "notebooklm": "./dist/cli/index.js"

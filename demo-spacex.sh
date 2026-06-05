@@ -13,7 +13,7 @@ echo "==> 0. Auth check"
 $CLI status
 
 echo; echo "==> 1. Create notebook"
-NB=$($CLI create "SpaceX 资料库" | awk '/^Created:/{print $2}')
+NB=$($CLI create "SpaceX Library" | awk '/^Created:/{print $2}')
 echo "    notebook id = $NB"
 
 echo; echo "==> 2. Add sources (2 YouTube videos + 2 Wikipedia articles), waiting for each to process"
