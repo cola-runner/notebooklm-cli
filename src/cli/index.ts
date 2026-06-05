@@ -15,7 +15,7 @@ import { importChromeCookies } from '../auth/chromeCookies.js';
 import { getStoragePath } from '../auth/paths.js';
 import { findMissingRequiredCookies, loadStorageState, saveStorageState } from '../auth/storage.js';
 import { configureProxyFromEnv } from '../proxy.js';
-import type { ShareStatus } from '../types.js';
+import type { ResearchPollResult, ShareStatus } from '../types.js';
 import { registerArtifactCommands } from './artifactCommands.js';
 import { handleError, openClient } from './helpers.js';
 import { runBrowserLogin } from './loginBrowser.js';
@@ -31,6 +31,19 @@ function printShareStatus(s: ShareStatus): void {
     console.log(`Collaborators (${s.sharedUsers.length}):`);
     for (const u of s.sharedUsers) console.log(`  ${u.email} (permission ${u.permission})`);
   }
+}
+
+/** Human renderer for a research poll result. */
+function printResearch(r: ResearchPollResult): void {
+  console.log(`status: ${r.status}${r.taskId ? `  (task ${r.taskId})` : ''}`);
+  if (r.summary) console.log(`\n${r.summary}`);
+  if (r.sources.length > 0) {
+    console.log(`\nSources (${r.sources.length}):`);
+    for (const s of r.sources) {
+      console.log(`  ${s.title || '(untitled)'}${s.url ? `\n    ${s.url}` : ''}`);
+    }
+  }
+  if (r.report) console.log(`\n--- report ---\n${r.report}`);
 }
 
 // Honor http(s)_proxy env vars (undici ignores them by default).
@@ -537,6 +550,114 @@ share
       fail(opts, err);
     }
   });
+
+const research = program.command('research').description('Web/Drive research discovery');
+
+research
+  .command('start <notebookId> <query>')
+  .description('Start a research session (optionally wait for results)')
+  .option('--storage <path>', 'Override storage_state.json path')
+  .option('--mode <mode>', 'fast | deep (deep is web-only)', 'fast')
+  .option('--source <source>', 'web | drive', 'web')
+  .option('--wait', 'Wait for results before returning', false)
+  .option('--timeout <seconds>', 'Max seconds to wait when --wait is set', '300')
+  .option('--json', 'Output as JSON', false)
+  .action(
+    async (
+      notebookId: string,
+      query: string,
+      opts: {
+        storage?: string;
+        json: boolean;
+        mode: string;
+        source: string;
+        wait?: boolean;
+        timeout: string;
+      },
+    ) => {
+      try {
+        const client = await openClient(opts.storage);
+        const started = await client.research.start(notebookId, query, {
+          mode: opts.mode as 'fast' | 'deep',
+          source: opts.source as 'web' | 'drive',
+        });
+        if (!started) {
+          fail(opts, new Error('Research could not be started (no task id returned).'));
+          return;
+        }
+        if (!opts.wait) {
+          await client.save();
+          emit(opts, started, (s) =>
+            console.log(
+              `Started ${s.mode} research: task ${s.taskId}\n  poll with: research poll ${notebookId} --task-id ${s.taskId}`,
+            ),
+          );
+          return;
+        }
+        const result = await client.research.waitForResults(notebookId, started.taskId, {
+          timeoutMs: Number(opts.timeout) * 1000,
+          onStatus: (s) => console.error(`  … ${s}`),
+        });
+        await client.save();
+        emit(opts, result, (r) => printResearch(r));
+        if (result.status === 'in_progress') process.exit(EXIT.NOT_READY);
+      } catch (err) {
+        fail(opts, err);
+      }
+    },
+  );
+
+research
+  .command('poll <notebookId>')
+  .description('Poll for research results')
+  .option('--storage <path>', 'Override storage_state.json path')
+  .option('--task-id <id>', 'Select a specific in-flight task')
+  .option('--json', 'Output as JSON', false)
+  .action(
+    async (notebookId: string, opts: { storage?: string; json: boolean; taskId?: string }) => {
+      try {
+        const client = await openClient(opts.storage);
+        const result = await client.research.poll(notebookId, opts.taskId);
+        await client.save();
+        emit(opts, result, (r) => printResearch(r));
+      } catch (err) {
+        fail(opts, err);
+      }
+    },
+  );
+
+research
+  .command('import <notebookId> <taskId>')
+  .description('Import discovered sources for a task into the notebook')
+  .option('--storage <path>', 'Override storage_state.json path')
+  .option('--limit <n>', 'Import at most N sources', '5')
+  .option('--json', 'Output as JSON', false)
+  .action(
+    async (
+      notebookId: string,
+      taskId: string,
+      opts: { storage?: string; json: boolean; limit: string },
+    ) => {
+      try {
+        const client = await openClient(opts.storage);
+        const polled = await client.research.poll(notebookId, taskId);
+        const limit = Math.max(0, Number(opts.limit) || 0);
+        const picked = polled.sources.slice(0, limit);
+        if (picked.length === 0) {
+          fail(opts, new Error('No importable sources for that task (poll returned none).'));
+          return;
+        }
+        const imported = await client.research.importSources(notebookId, taskId, picked);
+        await client.save();
+        emit(opts, { imported }, () => {
+          console.log(`Imported ${imported.length} source(s):`);
+          for (const s of imported) console.log(`  ${s.id}  ${s.title}`);
+        });
+      } catch (err) {
+        fail(opts, err);
+      }
+    },
+  );
 
 registerArtifactCommands(program);
 

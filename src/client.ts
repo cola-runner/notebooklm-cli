@@ -13,6 +13,7 @@ import { ArtifactsAPI } from './api/artifacts.js';
 import { ChatAPI } from './api/chat.js';
 import { NotebooksAPI } from './api/notebooks.js';
 import { NotesAPI } from './api/notes.js';
+import { ResearchAPI } from './api/research.js';
 import { ShareAPI } from './api/share.js';
 import { SourcesAPI } from './api/sources.js';
 import { getStoragePath } from './auth/paths.js';
@@ -43,6 +44,7 @@ export class NotebookLMClient {
   readonly artifacts: ArtifactsAPI;
   readonly notes: NotesAPI;
   readonly share: ShareAPI;
+  readonly research: ResearchAPI;
   private readonly readOnlyStorage: boolean;
 
   private constructor(session: Session, readOnlyStorage: boolean) {
@@ -54,6 +56,7 @@ export class NotebookLMClient {
     this.artifacts = new ArtifactsAPI(session, this.notebooks);
     this.notes = new NotesAPI(session);
     this.share = new ShareAPI(session);
+    this.research = new ResearchAPI(session);
   }
 
   /**

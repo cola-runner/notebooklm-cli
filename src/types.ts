@@ -66,6 +66,50 @@ export interface ShareStatus {
   sharedUsers: SharedUser[];
 }
 
+/** A source discovered by a research session. */
+export interface ResearchSource {
+  url: string;
+  title: string;
+  /** 1=web, 2=drive, 5=deep-research report (or an unknown string tag). */
+  resultType: number | string;
+  /** Task/report id that produced this source. */
+  researchTaskId: string;
+  /** Deep-research report markdown, when this entry is a report. */
+  reportMarkdown?: string;
+}
+
+/** Result of starting a research session. */
+export interface ResearchStart {
+  taskId: string;
+  reportId?: string;
+  notebookId: string;
+  query: string;
+  mode: 'fast' | 'deep';
+}
+
+/** A single parsed research task from a poll. */
+export interface ResearchTask {
+  taskId: string;
+  /** "in_progress" | "completed". */
+  status: string;
+  query: string;
+  sources: ResearchSource[];
+  summary: string;
+  report: string;
+}
+
+/** Poll result: the selected task's fields plus every in-flight task. */
+export interface ResearchPollResult {
+  /** "in_progress" | "completed" | "no_research". */
+  status: string;
+  taskId?: string;
+  query?: string;
+  sources: ResearchSource[];
+  summary?: string;
+  report?: string;
+  tasks: ResearchTask[];
+}
+
 export interface ChatReference {
   /** Source UUID this reference points to. */
   sourceId: string;
