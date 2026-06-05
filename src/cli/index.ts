@@ -360,6 +360,123 @@ program
     },
   );
 
+const note = program.command('note').description('Note operations within a notebook');
+
+note
+  .command('list <notebookId>')
+  .description('List text notes in a notebook')
+  .option('--storage <path>', 'Override storage_state.json path')
+  .option('--json', 'Output as JSON', false)
+  .action(async (notebookId: string, opts: { storage?: string; json: boolean }) => {
+    try {
+      const client = await openClient(opts.storage);
+      const notes = await client.notes.list(notebookId);
+      await client.save();
+      emit(opts, notes, (list) => {
+        if (list.length === 0) {
+          console.log('(no notes)');
+          return;
+        }
+        for (const n of list) {
+          console.log(`${n.id}  ${n.title || '(untitled)'}`);
+        }
+      });
+    } catch (err) {
+      fail(opts, err);
+    }
+  });
+
+note
+  .command('get <notebookId> <noteId>')
+  .description('Show a note (title + content)')
+  .option('--storage <path>', 'Override storage_state.json path')
+  .option('--json', 'Output as JSON', false)
+  .action(async (notebookId: string, noteId: string, opts: { storage?: string; json: boolean }) => {
+    try {
+      const client = await openClient(opts.storage);
+      const found = await client.notes.get(notebookId, noteId);
+      await client.save();
+      if (!found) {
+        fail(opts, new Error(`Note not found: ${noteId}`));
+        return;
+      }
+      emit(opts, found, (n) => {
+        console.log(`# ${n.title || '(untitled)'}\n`);
+        console.log(n.content);
+      });
+    } catch (err) {
+      fail(opts, err);
+    }
+  });
+
+note
+  .command('create <notebookId>')
+  .description('Create a note')
+  .option('--storage <path>', 'Override storage_state.json path')
+  .option('--title <title>', 'Note title', 'New Note')
+  .option('--content <text>', 'Note content', '')
+  .option('--json', 'Output the created note as JSON', false)
+  .action(
+    async (
+      notebookId: string,
+      opts: { storage?: string; json: boolean; title: string; content: string },
+    ) => {
+      try {
+        const client = await openClient(opts.storage);
+        const created = await client.notes.create(notebookId, opts.title, opts.content);
+        await client.save();
+        emit(opts, created, (n) => console.log(`Created note ${n.id}  ${n.title}`));
+      } catch (err) {
+        fail(opts, err);
+      }
+    },
+  );
+
+note
+  .command('update <notebookId> <noteId>')
+  .description('Update a note title and/or content')
+  .option('--storage <path>', 'Override storage_state.json path')
+  .option('--title <title>', 'New title')
+  .option('--content <text>', 'New content')
+  .option('--json', 'Output as JSON', false)
+  .action(
+    async (
+      notebookId: string,
+      noteId: string,
+      opts: { storage?: string; json: boolean; title?: string; content?: string },
+    ) => {
+      try {
+        const client = await openClient(opts.storage);
+        // UPDATE_NOTE rewrites both fields, so fill any omitted one from the
+        // current note rather than blanking it.
+        const current = await client.notes.get(notebookId, noteId);
+        const title = opts.title ?? current?.title ?? '';
+        const content = opts.content ?? current?.content ?? '';
+        await client.notes.update(notebookId, noteId, content, title);
+        await client.save();
+        emit(opts, { id: noteId, title, content }, () => console.log(`Updated note ${noteId}`));
+      } catch (err) {
+        fail(opts, err);
+      }
+    },
+  );
+
+note
+  .command('delete <notebookId> <noteId>')
+  .description('Delete a note')
+  .option('--storage <path>', 'Override storage_state.json path')
+  .option('--json', 'Output as JSON', false)
+  .action(async (notebookId: string, noteId: string, opts: { storage?: string; json: boolean }) => {
+    try {
+      const client = await openClient(opts.storage);
+      await client.notes.delete(notebookId, noteId);
+      await client.save();
+      emit(opts, { deleted: true, id: noteId }, () => console.log(`Deleted ${noteId}`));
+    } catch (err) {
+      fail(opts, err);
+    }
+  });
+
 registerArtifactCommands(program);
 
 program.parseAsync(process.argv).catch((err) => {

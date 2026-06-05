@@ -12,6 +12,7 @@
 import { ArtifactsAPI } from './api/artifacts.js';
 import { ChatAPI } from './api/chat.js';
 import { NotebooksAPI } from './api/notebooks.js';
+import { NotesAPI } from './api/notes.js';
 import { SourcesAPI } from './api/sources.js';
 import { getStoragePath } from './auth/paths.js';
 import { loadStorageState } from './auth/storage.js';
@@ -39,6 +40,7 @@ export class NotebookLMClient {
   readonly sources: SourcesAPI;
   readonly chat: ChatAPI;
   readonly artifacts: ArtifactsAPI;
+  readonly notes: NotesAPI;
   private readonly readOnlyStorage: boolean;
 
   private constructor(session: Session, readOnlyStorage: boolean) {
@@ -48,6 +50,7 @@ export class NotebookLMClient {
     this.sources = new SourcesAPI(session);
     this.chat = new ChatAPI(session);
     this.artifacts = new ArtifactsAPI(session, this.notebooks);
+    this.notes = new NotesAPI(session);
   }
 
   /**

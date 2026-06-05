@@ -38,6 +38,14 @@ export interface Source {
   createdAt?: number;
 }
 
+/** A user-created note (distinct from AI-generated artifacts). */
+export interface Note {
+  id: string;
+  notebookId: string;
+  title: string;
+  content: string;
+}
+
 export interface ChatReference {
   /** Source UUID this reference points to. */
   sourceId: string;
