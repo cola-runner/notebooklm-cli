@@ -15,6 +15,7 @@ import { NotebooksAPI } from './api/notebooks.js';
 import { SourcesAPI } from './api/sources.js';
 import { getStoragePath } from './auth/paths.js';
 import { loadStorageState } from './auth/storage.js';
+import type { StorageState } from './auth/types.js';
 import { configureProxyFromEnv } from './proxy.js';
 import { AuthError } from './rpc/errors.js';
 import { Session } from './session/session.js';
@@ -64,6 +65,21 @@ export class NotebookLMClient {
     const sessionOpts: ConstructorParameters<typeof Session>[0] = { storagePath, state };
     if (opts.disableKeepalive !== undefined) sessionOpts.disableKeepalive = opts.disableKeepalive;
     return new NotebookLMClient(new Session(sessionOpts), opts.readOnlyStorage ?? false);
+  }
+
+  /**
+   * Open a client from an in-memory storage state (cookies not yet persisted).
+   *
+   * Used by the login flow to verify freshly-pasted cookies against the live
+   * API before writing them to disk. Defaults to read-only so the probe never
+   * mutates the candidate cookie set.
+   */
+  static fromState(state: StorageState, opts: ClientOptions = {}): NotebookLMClient {
+    configureProxyFromEnv();
+    const storagePath = opts.storagePath ?? getStoragePath();
+    const sessionOpts: ConstructorParameters<typeof Session>[0] = { storagePath, state };
+    if (opts.disableKeepalive !== undefined) sessionOpts.disableKeepalive = opts.disableKeepalive;
+    return new NotebookLMClient(new Session(sessionOpts), opts.readOnlyStorage ?? true);
   }
 
   /** Persist current cookie state to disk (no-op when `readOnlyStorage`). */

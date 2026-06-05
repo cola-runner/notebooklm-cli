@@ -9,6 +9,7 @@ coverage/
 # notebooklm artifacts
 storage_state.json
 *.cookies.json
+login-profile/
 
 # downloaded artifact output (generated media, not source)
 *.mp4

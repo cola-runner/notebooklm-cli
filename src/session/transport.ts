@@ -251,7 +251,20 @@ export class Transport {
     this.applySetCookies(res.headers['set-cookie']);
     const html = await res.body.text();
     if (res.statusCode >= 400) {
-      throw new NetworkError(`Homepage GET returned ${res.statusCode}`, { rawResponse: html });
+      if (res.statusCode === 429) {
+        throw new RateLimitError('Rate limited fetching homepage (HTTP 429)', { rawResponse: html });
+      }
+      if (res.statusCode >= 500) {
+        throw new ServerError(`Homepage GET returned ${res.statusCode}`, { rawResponse: html });
+      }
+      // The homepage GET carries no request params — its only input is the
+      // session cookies. So a 4xx here means the session was rejected
+      // (expired/invalid), not a transport fault. Surface as auth so callers
+      // (and agents) know to re-login rather than retry.
+      throw new AuthError(
+        `Session rejected fetching homepage (HTTP ${res.statusCode}). Run \`notebooklm login\` to refresh.`,
+        { rawResponse: html },
+      );
     }
     return { html, finalUrl: url };
   }

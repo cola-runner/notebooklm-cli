@@ -3,7 +3,7 @@
  */
 
 import { NotebookLMClient } from '../client.js';
-import { AuthError, RPCError } from '../rpc/errors.js';
+import { fail } from './output.js';
 
 /**
  * Open a client from storage, honoring an optional `--storage` override.
@@ -23,17 +23,7 @@ export async function openClient(storage: string | undefined): Promise<NotebookL
   return NotebookLMClient.fromStorage(opts);
 }
 
-/** Print a friendly error and exit non-zero. */
+/** Print a human-friendly error and exit with a class-specific code. */
 export function handleError(err: unknown): never {
-  if (err instanceof AuthError) {
-    console.error(`\n${err.message}`);
-    console.error("Hint: run 'notebooklm login' to refresh your session.");
-  } else if (err instanceof RPCError) {
-    console.error(`\nRPC error: ${err.message}`);
-    if (err.methodId) console.error(`  method: ${err.methodId}`);
-    if (err.foundIds.length > 0) console.error(`  foundIds: ${err.foundIds.join(', ')}`);
-  } else {
-    console.error(err);
-  }
-  process.exit(1);
+  return fail({}, err);
 }

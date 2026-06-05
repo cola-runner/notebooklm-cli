@@ -1,13 +1,17 @@
 /**
  * CLI commands for artifacts: `generate …`, `artifact …`, and `download …`.
+ *
+ * Every command supports `--json` for machine-readable output; progress lines
+ * go to stderr so a `--json` stdout stays a single clean JSON document.
  */
 
 import type { Command } from 'commander';
 import type { GenerationStatus } from '../artifactParse.js';
 import { AudioFormat, AudioLength, ReportFormat } from '../rpc/types.js';
-import { handleError, openClient } from './helpers.js';
+import { openClient } from './helpers.js';
+import { EXIT, type JsonFlag, emit, fail } from './output.js';
 
-interface CommonGenOpts {
+interface CommonGenOpts extends JsonFlag {
   storage?: string;
   wait?: boolean;
   timeout?: string;
@@ -39,6 +43,7 @@ function baseOpts(opts: CommonGenOpts): {
   return out;
 }
 
+/** Human renderer for a generation status (used when not `--json`). */
 function printStatus(prefix: string, status: GenerationStatus): void {
   if (status.status === 'failed') {
     console.error(`${prefix} failed: ${status.error ?? 'unknown error'}`);
@@ -59,24 +64,22 @@ async function runGeneration(
     const client = await openClient(opts.storage);
     const status = await generate(client);
     if (!status.taskId) {
-      printStatus('Generation', status);
       await client.save();
-      process.exit(1);
+      emit(opts, status, () => printStatus('Generation', status));
+      process.exit(EXIT.ERROR);
     }
-    printStatus('Started:', status);
+    let result = status;
     if (opts.wait) {
-      const final = await client.artifacts.waitForCompletion(notebookId, status.taskId, {
+      result = await client.artifacts.waitForCompletion(notebookId, status.taskId, {
         timeoutMs: Number(opts.timeout ?? '600') * 1000,
-        onStatusChange: (s) => console.log(`  … ${s.status}`),
+        onStatusChange: (s) => console.error(`  … ${s.status}`),
       });
-      printStatus('Final:', final);
-      await client.save();
-      if (final.status !== 'completed') process.exit(1);
-    } else {
-      await client.save();
     }
+    await client.save();
+    emit(opts, result, () => printStatus(opts.wait ? 'Final:' : 'Started:', result));
+    if (opts.wait && result.status !== 'completed') process.exit(EXIT.NOT_READY);
   } catch (err) {
-    handleError(err);
+    fail(opts, err);
   }
 }
 
@@ -90,7 +93,8 @@ export function registerArtifactCommands(program: Command): void {
       .option('--timeout <seconds>', 'Max seconds to wait when --wait is set', '600')
       .option('--language <lang>', 'Language code (default: en)')
       .option('--instructions <text>', 'Extra instructions to steer generation')
-      .option('--source-ids <ids>', 'Comma-separated source IDs (default: all sources)');
+      .option('--source-ids <ids>', 'Comma-separated source IDs (default: all sources)')
+      .option('--json', 'Output as JSON', false);
 
   // ---- generate audio ----
   withCommon(generate.command('audio <notebookId>').description('Generate an Audio Overview'))
@@ -183,18 +187,18 @@ export function registerArtifactCommands(program: Command): void {
         const client = await openClient(opts.storage);
         const artifacts = await client.artifacts.list(notebookId);
         await client.save();
-        if (opts.json) {
-          console.log(JSON.stringify(artifacts, null, 2));
-        } else if (artifacts.length === 0) {
-          console.log('(no artifacts)');
-        } else {
-          for (const a of artifacts) {
+        emit(opts, artifacts, (list) => {
+          if (list.length === 0) {
+            console.log('(no artifacts)');
+            return;
+          }
+          for (const a of list) {
             const date = a.createdAt ? new Date(a.createdAt).toISOString().slice(0, 10) : '—';
             console.log(`${a.id}  ${a.kind}  status=${a.status}  ${date}  ${a.title}`);
           }
-        }
+        });
       } catch (err) {
-        handleError(err);
+        fail(opts, err);
       }
     });
 
@@ -202,30 +206,41 @@ export function registerArtifactCommands(program: Command): void {
     .command('delete <notebookId> <artifactId>')
     .description('Delete an artifact')
     .option('--storage <path>', 'Override storage_state.json path')
-    .action(async (notebookId: string, artifactId: string, opts: { storage?: string }) => {
-      try {
-        const client = await openClient(opts.storage);
-        await client.artifacts.delete(notebookId, artifactId);
-        await client.save();
-        console.log(`Deleted ${artifactId}`);
-      } catch (err) {
-        handleError(err);
-      }
-    });
+    .option('--json', 'Output as JSON', false)
+    .action(
+      async (notebookId: string, artifactId: string, opts: { storage?: string; json: boolean }) => {
+        try {
+          const client = await openClient(opts.storage);
+          await client.artifacts.delete(notebookId, artifactId);
+          await client.save();
+          emit(opts, { deleted: true, id: artifactId }, () => console.log(`Deleted ${artifactId}`));
+        } catch (err) {
+          fail(opts, err);
+        }
+      },
+    );
 
   artifact
     .command('rename <notebookId> <artifactId> <title>')
     .description('Rename an artifact')
     .option('--storage <path>', 'Override storage_state.json path')
+    .option('--json', 'Output as JSON', false)
     .action(
-      async (notebookId: string, artifactId: string, title: string, opts: { storage?: string }) => {
+      async (
+        notebookId: string,
+        artifactId: string,
+        title: string,
+        opts: { storage?: string; json: boolean },
+      ) => {
         try {
           const client = await openClient(opts.storage);
           await client.artifacts.rename(notebookId, artifactId, title);
           await client.save();
-          console.log(`Renamed ${artifactId} → ${title}`);
+          emit(opts, { id: artifactId, title }, () =>
+            console.log(`Renamed ${artifactId} → ${title}`),
+          );
         } catch (err) {
-          handleError(err);
+          fail(opts, err);
         }
       },
     );
@@ -246,15 +261,20 @@ export function registerArtifactCommands(program: Command): void {
       .description(desc)
       .option('--id <artifactId>', 'Specific artifact id (default: latest completed)')
       .option('--storage <path>', 'Override storage_state.json path')
+      .option('--json', 'Output as JSON', false)
       .action(
-        async (notebookId: string, outputPath: string, opts: { id?: string; storage?: string }) => {
+        async (
+          notebookId: string,
+          outputPath: string,
+          opts: { id?: string; storage?: string; json: boolean },
+        ) => {
           try {
             const client = await openClient(opts.storage);
             const path = await client.artifacts[method](notebookId, outputPath, opts.id);
             await client.save();
-            console.log(`Saved: ${path}`);
+            emit(opts, { path }, () => console.log(`Saved: ${path}`));
           } catch (err) {
-            handleError(err);
+            fail(opts, err);
           }
         },
       );
@@ -266,11 +286,12 @@ export function registerArtifactCommands(program: Command): void {
     .option('--id <artifactId>', 'Specific artifact id (default: latest completed)')
     .option('--format <fmt>', 'pdf | pptx', 'pdf')
     .option('--storage <path>', 'Override storage_state.json path')
+    .option('--json', 'Output as JSON', false)
     .action(
       async (
         notebookId: string,
         outputPath: string,
-        opts: { id?: string; format?: string; storage?: string },
+        opts: { id?: string; format?: string; storage?: string; json: boolean },
       ) => {
         try {
           const fmt = opts.format === 'pptx' ? 'pptx' : 'pdf';
@@ -282,9 +303,9 @@ export function registerArtifactCommands(program: Command): void {
             fmt,
           );
           await client.save();
-          console.log(`Saved: ${path}`);
+          emit(opts, { path }, () => console.log(`Saved: ${path}`));
         } catch (err) {
-          handleError(err);
+          fail(opts, err);
         }
       },
     );
@@ -299,11 +320,12 @@ export function registerArtifactCommands(program: Command): void {
       .option('--id <artifactId>', 'Specific artifact id (default: latest completed)')
       .option('--format <fmt>', 'json | markdown | html', 'json')
       .option('--storage <path>', 'Override storage_state.json path')
+      .option('--json', 'Output as JSON', false)
       .action(
         async (
           notebookId: string,
           outputPath: string,
-          opts: { id?: string; format?: string; storage?: string },
+          opts: { id?: string; format?: string; storage?: string; json: boolean },
         ) => {
           try {
             const fmt = opts.format === 'markdown' || opts.format === 'html' ? opts.format : 'json';
@@ -312,9 +334,9 @@ export function registerArtifactCommands(program: Command): void {
               ? await client.artifacts.downloadQuiz(notebookId, outputPath, opts.id, fmt)
               : await client.artifacts.downloadFlashcards(notebookId, outputPath, opts.id, fmt);
             await client.save();
-            console.log(`Saved: ${path}`);
+            emit(opts, { path }, () => console.log(`Saved: ${path}`));
           } catch (err) {
-            handleError(err);
+            fail(opts, err);
           }
         },
       );
