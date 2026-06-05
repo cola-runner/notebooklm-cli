@@ -34,6 +34,53 @@ function isTrustedDownloadHost(host: string): boolean {
   );
 }
 
+/** Node/undici error codes for transient transport faults worth retrying. */
+const TRANSIENT_NETWORK_CODES = new Set([
+  'ECONNRESET',
+  'ECONNREFUSED',
+  'ECONNABORTED',
+  'ETIMEDOUT',
+  'EPIPE',
+  'ENOTFOUND',
+  'EAI_AGAIN',
+  'EHOSTUNREACH',
+  'ENETUNREACH',
+  'ENETDOWN',
+  'UND_ERR_SOCKET',
+  'UND_ERR_CONNECT_TIMEOUT',
+  'UND_ERR_HEADERS_TIMEOUT',
+  'UND_ERR_BODY_TIMEOUT',
+  'UND_ERR_CLOSED',
+  'UND_ERR_DESTROYED',
+]);
+
+const TRANSIENT_NETWORK_MESSAGE =
+  /socket disconnected|socket hang up|network socket|TLS connection|fetch failed|other side closed/i;
+
+/**
+ * If `err` is a low-level Node/undici transport fault (socket disconnect, TLS
+ * handshake failure, connection reset/timeout, DNS), return it re-typed as a
+ * `NetworkError`; otherwise return null. undici nests the real cause one level
+ * down (`err.cause`), so we check both. Lets callers classify these as NETWORK
+ * (retryable / exit 8) instead of a generic unexpected error.
+ */
+function asNetworkError(err: unknown): NetworkError | null {
+  if (err instanceof NetworkError) return err;
+  for (const candidate of [err, (err as { cause?: unknown })?.cause]) {
+    if (!candidate) continue;
+    const code = (candidate as { code?: unknown }).code;
+    const message = candidate instanceof Error ? candidate.message : '';
+    if (
+      (typeof code === 'string' && TRANSIENT_NETWORK_CODES.has(code)) ||
+      TRANSIENT_NETWORK_MESSAGE.test(message)
+    ) {
+      const original = err instanceof Error ? err.message : String(err);
+      return new NetworkError(`Network error: ${original}`, { cause: err });
+    }
+  }
+  return null;
+}
+
 export interface TransportOptions {
   /** Where storage_state.json lives — used as rotation rate-limit key. */
   storagePath: string;
@@ -202,7 +249,9 @@ export class Transport {
     const debug = process.env['NOTEBOOKLM_DEBUG'] === '1';
     let url = initialUrl;
     for (let hop = 0; hop < maxHops; hop++) {
-      const res = await request(url, init);
+      const res = await request(url, init).catch((err: unknown) => {
+        throw asNetworkError(err) ?? err;
+      });
       this.applySetCookies(res.headers['set-cookie']);
       if (debug) {
         const setCookie = res.headers['set-cookie'];
@@ -252,7 +301,9 @@ export class Transport {
     const html = await res.body.text();
     if (res.statusCode >= 400) {
       if (res.statusCode === 429) {
-        throw new RateLimitError('Rate limited fetching homepage (HTTP 429)', { rawResponse: html });
+        throw new RateLimitError('Rate limited fetching homepage (HTTP 429)', {
+          rawResponse: html,
+        });
       }
       if (res.statusCode >= 500) {
         throw new ServerError(`Homepage GET returned ${res.statusCode}`, { rawResponse: html });
@@ -312,12 +363,19 @@ export class Transport {
         }
         return text;
       } catch (err) {
-        lastErr = err;
-        const retryable = err instanceof RateLimitError || err instanceof ServerError;
-        if (!retryable || attempt === MAX_RETRIES) throw err;
+        // Re-type low-level socket/TLS/DNS faults as NetworkError so they are
+        // both retryable here and classified as NETWORK (exit 8) if they escape.
+        const networkErr = asNetworkError(err);
+        const normalized = networkErr ?? err;
+        lastErr = normalized;
+        const retryable =
+          normalized instanceof RateLimitError ||
+          normalized instanceof ServerError ||
+          networkErr !== null;
+        if (!retryable || attempt === MAX_RETRIES) throw normalized;
         let delayMs = computeBackoffMs(attempt);
-        if (err instanceof RateLimitError && err.message.includes('retry-after=')) {
-          const match = /retry-after=(\d+)s/.exec(err.message);
+        if (normalized instanceof RateLimitError && normalized.message.includes('retry-after=')) {
+          const match = /retry-after=(\d+)s/.exec(normalized.message);
           if (match?.[1]) delayMs = Math.max(delayMs, Number(match[1]) * 1000);
         }
         await sleep(delayMs);

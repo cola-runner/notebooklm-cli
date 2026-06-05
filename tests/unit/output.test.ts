@@ -6,9 +6,9 @@ import {
   ArtifactNotReadyError,
   AuthError,
   NetworkError,
-  RateLimitError,
   RPCError,
   RPCTimeoutError,
+  RateLimitError,
 } from '../../src/rpc/errors.js';
 
 describe('classifyError — stable code + exit-code contract', () => {

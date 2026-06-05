@@ -54,6 +54,21 @@ function printStatus(prefix: string, status: GenerationStatus): void {
   console.log(line);
 }
 
+/**
+ * Exit code for a generation the backend rejected (no taskId). A
+ * USER_DISPLAYABLE_ERROR about rate/quota maps to RATE_LIMIT so an agent backs
+ * off; anything else is a generic ERROR.
+ */
+function exitCodeForFailedStatus(status: GenerationStatus): number {
+  if (
+    status.errorCode === 'USER_DISPLAYABLE_ERROR' &&
+    /rate limit|quota|too many/i.test(status.error ?? '')
+  ) {
+    return EXIT.RATE_LIMIT;
+  }
+  return EXIT.ERROR;
+}
+
 /** Run a generation call, optionally blocking until it completes. */
 async function runGeneration(
   opts: CommonGenOpts,
@@ -66,7 +81,7 @@ async function runGeneration(
     if (!status.taskId) {
       await client.save();
       emit(opts, status, () => printStatus('Generation', status));
-      process.exit(EXIT.ERROR);
+      process.exit(exitCodeForFailedStatus(status));
     }
     let result = status;
     if (opts.wait) {

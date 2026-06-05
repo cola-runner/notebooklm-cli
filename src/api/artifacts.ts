@@ -43,8 +43,8 @@ import {
   ArtifactTypeCode,
   type AudioFormat,
   type AudioLength,
-  type InfographicDetail,
-  type InfographicOrientation,
+  InfographicDetail,
+  InfographicOrientation,
   type InfographicStyle,
   type QuizDifficulty,
   type QuizQuantity,
@@ -383,15 +383,15 @@ export class ArtifactsAPI {
     const language = opts.language ?? getDefaultLanguage();
     const sourceIds = opts.sourceIds ?? (await this.notebooks.getSourceIds(notebookId));
     const triple = nestSourceIds(sourceIds, 2);
+    // The backend rejects an infographic request whose orientation/detail are
+    // both null — CREATE_ARTIFACT then returns null (no artifact_id) and the
+    // stub artifact lands in FAILED. Default to the web UI's choices (landscape,
+    // standard detail) so a bare `generate infographic` works. style may stay
+    // null (the backend picks one).
+    const orientation = opts.orientation ?? InfographicOrientation.LANDSCAPE;
+    const detailLevel = opts.detailLevel ?? InfographicDetail.STANDARD;
     const config = [
-      [
-        opts.instructions ?? null,
-        language,
-        null,
-        opts.orientation ?? null,
-        opts.detailLevel ?? null,
-        opts.style ?? null,
-      ],
+      [opts.instructions ?? null, language, null, orientation, detailLevel, opts.style ?? null],
     ];
     const inner = [null, null, ArtifactTypeCode.INFOGRAPHIC, triple, ...nulls(10), config];
     return this.callGenerate(notebookId, [[2], notebookId, inner]);
@@ -407,7 +407,10 @@ export class ArtifactsAPI {
     const config = [
       [opts.instructions ?? null, language, opts.slideFormat ?? null, opts.slideLength ?? null],
     ];
-    const inner = [null, null, ArtifactTypeCode.SLIDE_DECK, triple, ...nulls(13), config];
+    // Config sits at inner index 16 (positions 4–15 are null padding); mirrors
+    // notebooklm-py generate_slide_deck. Off-by-one here makes the backend drop
+    // the config and return no artifact_id.
+    const inner = [null, null, ArtifactTypeCode.SLIDE_DECK, triple, ...nulls(12), config];
     return this.callGenerate(notebookId, [[2], notebookId, inner]);
   }
 
@@ -419,7 +422,10 @@ export class ArtifactsAPI {
     const sourceIds = opts.sourceIds ?? (await this.notebooks.getSourceIds(notebookId));
     const triple = nestSourceIds(sourceIds, 2);
     const config = [null, [opts.instructions ?? null, language]];
-    const inner = [null, null, ArtifactTypeCode.DATA_TABLE, triple, ...nulls(15), config];
+    // Config sits at inner index 18 (positions 4–17 are null padding); mirrors
+    // notebooklm-py generate_data_table. Off-by-one here makes the backend drop
+    // the config and return no artifact_id.
+    const inner = [null, null, ArtifactTypeCode.DATA_TABLE, triple, ...nulls(14), config];
     return this.callGenerate(notebookId, [[2], notebookId, inner]);
   }
 
