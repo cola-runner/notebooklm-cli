@@ -1,0 +1,16 @@
+node_modules/
+dist/
+coverage/
+.DS_Store
+*.log
+.env
+.env.local
+
+# notebooklm artifacts
+storage_state.json
+*.cookies.json
+
+# downloaded artifact output (generated media, not source)
+*.mp4
+*.mp3
+*.m4a
