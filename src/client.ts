@@ -24,7 +24,7 @@ import { AuthError } from './rpc/errors.js';
 import { Session } from './session/session.js';
 
 export interface ClientOptions {
-  /** Path to storage_state.json — defaults to `~/.config/notebooklm-node/storage_state.json`. */
+  /** Path to storage_state.json — defaults to `~/.config/notebooklm-cli/storage_state.json`. */
   storagePath?: string;
   /** Disable the keepalive RotateCookies poke. */
   disableKeepalive?: boolean;

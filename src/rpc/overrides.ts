@@ -19,12 +19,12 @@ const parseCache = new Map<string, Map<string, string>>();
 
 function warn(msg: string): void {
   // eslint-disable-next-line no-console
-  console.warn(`[notebooklm-node] ${msg}`);
+  console.warn(`[notebooklm-cli] ${msg}`);
 }
 
 function info(msg: string): void {
   // eslint-disable-next-line no-console
-  console.info(`[notebooklm-node] ${msg}`);
+  console.info(`[notebooklm-cli] ${msg}`);
 }
 
 function parseOverrides(raw: string | undefined): Map<string, string> {

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * notebooklm-node CLI entry point.
+ * notebooklm-cli entry point.
  *
  * Commands:
  *   login           Open a browser, sign in, auto-capture the session (no keychain)
@@ -49,7 +49,7 @@ function printResearch(r: ResearchPollResult): void {
 // Honor http(s)_proxy env vars (undici ignores them by default).
 const activeProxy = configureProxyFromEnv();
 if (activeProxy && process.env['NOTEBOOKLM_DEBUG'] === '1') {
-  console.error(`[notebooklm-node] routing requests through proxy ${activeProxy}`);
+  console.error(`[notebooklm-cli] routing requests through proxy ${activeProxy}`);
 }
 
 const program = new Command();

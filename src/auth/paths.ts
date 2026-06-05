@@ -1,7 +1,7 @@
 /**
  * Filesystem paths for auth storage.
  *
- * Default location: `~/.config/notebooklm-node/storage_state.json`.
+ * Default location: `~/.config/notebooklm-cli/storage_state.json`.
  * Override via `NOTEBOOKLM_STORAGE` env var.
  */
 
@@ -14,7 +14,7 @@ export const REFRESH_CMD_ENV_VAR = 'NOTEBOOKLM_REFRESH_CMD';
 export const DISABLE_KEEPALIVE_ENV_VAR = 'NOTEBOOKLM_DISABLE_KEEPALIVE_POKE';
 
 export function defaultStoragePath(): string {
-  return join(homedir(), '.config', 'notebooklm-node', 'storage_state.json');
+  return join(homedir(), '.config', 'notebooklm-cli', 'storage_state.json');
 }
 
 export function getStoragePath(): string {

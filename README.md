@@ -1,6 +1,6 @@
 <div align="center">
 
-# 📓 notebooklm-node
+# 📓 notebooklm-cli
 
 ### The **agent-first** NotebookLM client for Node.js & TypeScript
 
@@ -80,7 +80,7 @@ Progress goes to **stderr**, results to **stdout** — pipe one without the othe
 ## 🚀 Quickstart
 
 ```bash
-git clone <repo-url> && cd notebooklm-node
+git clone https://github.com/cola-runner/notebooklm-cli.git && cd notebooklm-cli
 pnpm install
 pnpm build
 pnpm playwright install chromium     # one-time, for browser login
@@ -146,7 +146,7 @@ Add `--json` to any of the above for machine-readable output.
 ## 🧩 Programmatic API
 
 ```ts
-import { NotebookLMClient } from 'notebooklm-node';
+import { NotebookLMClient } from 'notebooklm-cli';
 
 const client = await NotebookLMClient.fromStorage();
 
