@@ -194,6 +194,40 @@ program
     }
   });
 
+program
+  .command('rename <notebookId> <newTitle>')
+  .description('Rename a notebook')
+  .option('--storage <path>', 'Override storage_state.json path')
+  .option('--json', 'Output the updated notebook as JSON', false)
+  .action(
+    async (notebookId: string, newTitle: string, opts: { storage?: string; json: boolean }) => {
+      try {
+        const client = await openClient(opts.storage);
+        const nb = await client.notebooks.rename(notebookId, newTitle);
+        await client.save();
+        emit(opts, nb, () => console.log(`Renamed ${nb.id} → ${nb.title}`));
+      } catch (err) {
+        fail(opts, err);
+      }
+    },
+  );
+
+program
+  .command('delete <notebookId>')
+  .description('Delete a notebook (irreversible — removes its sources, artifacts and chat)')
+  .option('--storage <path>', 'Override storage_state.json path')
+  .option('--json', 'Output as JSON', false)
+  .action(async (notebookId: string, opts: { storage?: string; json: boolean }) => {
+    try {
+      const client = await openClient(opts.storage);
+      await client.notebooks.delete(notebookId);
+      await client.save();
+      emit(opts, { deleted: true, id: notebookId }, () => console.log(`Deleted ${notebookId}`));
+    } catch (err) {
+      fail(opts, err);
+    }
+  });
+
 const source = program.command('source').description('Source operations within a notebook');
 
 source

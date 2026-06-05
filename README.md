@@ -39,6 +39,8 @@ pnpm dev login                                  # opens Chromium for Google logi
 pnpm dev status                                 # check auth state
 pnpm dev list                                   # list notebooks
 pnpm dev create "My research"                   # create a notebook (prints id)
+pnpm dev rename <nb_id> "New title"             # rename a notebook
+pnpm dev delete <nb_id>                         # delete a notebook (irreversible)
 pnpm dev source add <nb_id> --url https://...   # add a URL or YouTube source
 pnpm dev source add <nb_id> --text "..." --title "Notes"
 pnpm dev source list <nb_id>                    # list sources
@@ -56,7 +58,7 @@ pnpm dev download quiz <nb_id> ./quiz.md --format markdown
 End-to-end smoke flow:
 
 ```bash
-NB=$(pnpm dev create "demo" --json | jq -r .id)   # (jq output coming soon)
+NB=$(pnpm dev create "demo" --json | jq -r .id)   # every data command supports --json
 pnpm dev source add "$NB" --url https://en.wikipedia.org/wiki/Erlang_(programming_language) --wait
 pnpm dev ask "$NB" "Summarize the article in one paragraph."
 ```
