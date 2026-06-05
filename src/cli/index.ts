@@ -15,12 +15,23 @@ import { importChromeCookies } from '../auth/chromeCookies.js';
 import { getStoragePath } from '../auth/paths.js';
 import { findMissingRequiredCookies, loadStorageState, saveStorageState } from '../auth/storage.js';
 import { configureProxyFromEnv } from '../proxy.js';
+import type { ShareStatus } from '../types.js';
 import { registerArtifactCommands } from './artifactCommands.js';
 import { handleError, openClient } from './helpers.js';
 import { runBrowserLogin } from './loginBrowser.js';
 import { runPasteLogin } from './loginPaste.js';
 import { readAllStdin } from './loginShared.js';
 import { EXIT, emit, fail } from './output.js';
+
+/** Human renderer for a sharing status. */
+function printShareStatus(s: ShareStatus): void {
+  console.log(s.isPublic ? 'Public (anyone with link)' : 'Private (restricted)');
+  if (s.shareUrl) console.log(`URL: ${s.shareUrl}`);
+  if (s.sharedUsers.length > 0) {
+    console.log(`Collaborators (${s.sharedUsers.length}):`);
+    for (const u of s.sharedUsers) console.log(`  ${u.email} (permission ${u.permission})`);
+  }
+}
 
 // Honor http(s)_proxy env vars (undici ignores them by default).
 const activeProxy = configureProxyFromEnv();
@@ -472,6 +483,56 @@ note
       await client.notes.delete(notebookId, noteId);
       await client.save();
       emit(opts, { deleted: true, id: noteId }, () => console.log(`Deleted ${noteId}`));
+    } catch (err) {
+      fail(opts, err);
+    }
+  });
+
+const share = program.command('share').description('Notebook sharing (public link)');
+
+share
+  .command('status <notebookId>')
+  .description('Show sharing status (public? share url, collaborators)')
+  .option('--storage <path>', 'Override storage_state.json path')
+  .option('--json', 'Output as JSON', false)
+  .action(async (notebookId: string, opts: { storage?: string; json: boolean }) => {
+    try {
+      const client = await openClient(opts.storage);
+      const status = await client.share.getStatus(notebookId);
+      await client.save();
+      emit(opts, status, (s) => printShareStatus(s));
+    } catch (err) {
+      fail(opts, err);
+    }
+  });
+
+share
+  .command('public <notebookId>')
+  .description('Enable anyone-with-link sharing; prints the share URL')
+  .option('--storage <path>', 'Override storage_state.json path')
+  .option('--json', 'Output as JSON', false)
+  .action(async (notebookId: string, opts: { storage?: string; json: boolean }) => {
+    try {
+      const client = await openClient(opts.storage);
+      const status = await client.share.setPublic(notebookId, true);
+      await client.save();
+      emit(opts, status, (s) => printShareStatus(s));
+    } catch (err) {
+      fail(opts, err);
+    }
+  });
+
+share
+  .command('private <notebookId>')
+  .description('Disable public sharing (restrict to invited users)')
+  .option('--storage <path>', 'Override storage_state.json path')
+  .option('--json', 'Output as JSON', false)
+  .action(async (notebookId: string, opts: { storage?: string; json: boolean }) => {
+    try {
+      const client = await openClient(opts.storage);
+      const status = await client.share.setPublic(notebookId, false);
+      await client.save();
+      emit(opts, status, (s) => printShareStatus(s));
     } catch (err) {
       fail(opts, err);
     }

@@ -46,6 +46,26 @@ export interface Note {
   content: string;
 }
 
+/** A user a notebook is shared with. */
+export interface SharedUser {
+  email: string;
+  /** SharePermission enum value (1=owner, 2=editor, 3=viewer). */
+  permission: number;
+  displayName?: string;
+  avatarUrl?: string;
+}
+
+/** Current sharing configuration for a notebook. */
+export interface ShareStatus {
+  notebookId: string;
+  isPublic: boolean;
+  /** ShareAccess enum value (0=restricted, 1=anyone with link). */
+  access: number;
+  /** Shareable URL when public; undefined when restricted. */
+  shareUrl?: string;
+  sharedUsers: SharedUser[];
+}
+
 export interface ChatReference {
   /** Source UUID this reference points to. */
   sourceId: string;

@@ -46,6 +46,8 @@ pnpm dev source add <nb_id> --text "..." --title "Notes"
 pnpm dev source list <nb_id>                    # list sources
 pnpm dev note create <nb_id> --title "T" --content "..."   # notes: create/list/get/update/delete
 pnpm dev note list <nb_id>
+pnpm dev share public <nb_id>                   # anyone-with-link; prints share URL
+pnpm dev share status <nb_id>                   # current visibility + collaborators
 pnpm dev ask <nb_id> "What is this about?"      # ask (prints answer + cited sources)
 pnpm dev ask <nb_id> "And what about that?" --conversation-id <id>   # follow-up turn
 
