@@ -54,7 +54,7 @@ if (activeProxy && process.env['NOTEBOOKLM_DEBUG'] === '1') {
 
 const program = new Command();
 
-program.name('notebooklm').description('Unofficial NotebookLM CLI for Node.js').version('0.0.1');
+program.name('notebooklm').description('Unofficial NotebookLM CLI for Node.js').version('0.1.0');
 
 program
   .command('login')
