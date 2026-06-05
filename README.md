@@ -77,21 +77,42 @@ Progress goes to **stderr**, results to **stdout** — pipe one without the othe
 
 ---
 
-## 🚀 Quickstart
+## 🚀 Install
+
+```bash
+npm install -g @cola_runner/notebooklm-cli     # global `notebooklm` command
+# …or run without installing:
+npx @cola_runner/notebooklm-cli login
+```
+
+The core install is tiny — just `commander` / `undici` / `tough-cookie`, no
+browser. That's all an agent needs: authenticate headless with
+`notebooklm login --paste` (paste a "Copy as cURL"/Cookie header), then every
+other command is pure HTTP.
+
+The one-click **browser** login is optional and needs Playwright:
+
+```bash
+npm i -g playwright && playwright install chromium   # only for `notebooklm login`
+```
+
+<details>
+<summary><b>From source (contributors)</b></summary>
 
 ```bash
 git clone https://github.com/cola-runner/notebooklm-cli.git && cd notebooklm-cli
 pnpm install
 pnpm build
 pnpm playwright install chromium     # one-time, for browser login
-npm link                             # optional: puts `notebooklm` on your PATH
+npm link                             # puts `notebooklm` on your PATH
 ```
 
 > No build step while hacking? Use `pnpm dev <command>` to run straight from source.
+</details>
 
 ```bash
-notebooklm login                      # opens your browser; sign in to Google
-notebooklm list                       # confirm it worked
+notebooklm login           # browser sign-in (or `login --paste` for headless)
+notebooklm list            # confirm it worked
 ```
 
 ---
@@ -146,7 +167,7 @@ Add `--json` to any of the above for machine-readable output.
 ## 🧩 Programmatic API
 
 ```ts
-import { NotebookLMClient } from 'notebooklm-cli';
+import { NotebookLMClient } from '@cola_runner/notebooklm-cli';
 
 const client = await NotebookLMClient.fromStorage();
 

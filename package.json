@@ -1,5 +1,5 @@
 {
-  "name": "notebooklm-cli",
+  "name": "@cola_runner/notebooklm-cli",
   "version": "0.1.0",
   "description": "Agent-first unofficial NotebookLM client for Node.js — JSON CLI, citations, multi-turn chat, all studio artifacts, research & notes",
   "keywords": ["notebooklm", "google-notebooklm", "cli", "agent", "llm", "typescript", "unofficial"],
