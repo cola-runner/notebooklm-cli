@@ -18,7 +18,7 @@
  * the window we open.
  */
 
-import { type BrowserContext, type Cookie, chromium } from 'playwright';
+import type { BrowserContext, Cookie } from 'playwright';
 import { findChromiumBrowser } from '../auth/browserLocator.js';
 import { ensureStorageDir, getStoragePath, loginProfileDir } from '../auth/paths.js';
 import { findMissingRequiredCookies } from '../auth/storage.js';
@@ -87,6 +87,19 @@ async function captureSession(context: BrowserContext, deadline: number): Promis
   );
 }
 
+/** Lazy-load Playwright's chromium driver (an optional dependency). */
+async function loadChromium() {
+  try {
+    return (await import('playwright')).chromium;
+  } catch {
+    throw new Error(
+      'Browser login needs the optional "playwright" package, which is not installed.\n' +
+        '  Install it:  npm i -g playwright && playwright install chromium\n' +
+        '  Or sign in headless instead:  notebooklm login --paste',
+    );
+  }
+}
+
 export async function runBrowserLogin(opts: BrowserLoginOptions = {}): Promise<void> {
   const choice = findChromiumBrowser();
   if (!choice) {
@@ -105,6 +118,9 @@ export async function runBrowserLogin(opts: BrowserLoginOptions = {}): Promise<v
 
   // Drive the *real* browser with automation markers stripped, so Google does
   // not flag it as an automated ("insecure") browser. Mirrors notebooklm-py.
+  // Playwright is an optional dependency — loaded only on the browser-login
+  // path — so the core install (and `login --paste`) stays light.
+  const chromium = await loadChromium();
   const context = await chromium.launchPersistentContext(profileDir, {
     executablePath: choice.path,
     headless: false,
