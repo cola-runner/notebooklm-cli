@@ -9,6 +9,7 @@ purpose-built for LLM agents**: structured output, machine-readable errors, and
 exit codes you can branch on.
 
 [![Built for agents](https://img.shields.io/badge/built%20for-LLM%20agents-8A2BE2.svg)](#-built-for-ai-agents)
+[![npm](https://img.shields.io/npm/v/@cola_runner/notebooklm-cli?color=CB3837&logo=npm)](https://www.npmjs.com/package/@cola_runner/notebooklm-cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-3C873A.svg)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6.svg)](tsconfig.json)
