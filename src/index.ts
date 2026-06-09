@@ -4,7 +4,8 @@
 
 export { NotebookLMClient, type ClientOptions } from './client.js';
 export { NotebooksAPI } from './api/notebooks.js';
-export type { Notebook } from './types.js';
+export { UserAPI } from './api/user.js';
+export type { Notebook, UserAccount } from './types.js';
 export {
   AuthError,
   ClientError,

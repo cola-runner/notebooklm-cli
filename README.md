@@ -13,7 +13,7 @@ exit codes you can branch on.
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-3C873A.svg)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6.svg)](tsconfig.json)
-[![Tests](https://img.shields.io/badge/tests-99%20passing-2EA44F.svg)](tests)
+[![Tests](https://img.shields.io/badge/tests-120%20passing-2EA44F.svg)](tests)
 
 </div>
 
@@ -73,8 +73,35 @@ Progress goes to **stderr**, results to **stdout** — pipe one without the othe
 - 🔬 **Research · notes · sharing** — web/Drive research discovery + import,
   notes CRUD, and public-link sharing.
 - 🧱 **Solid by construction** — TypeScript strict mode, `undici` transport with
-  network-fault classification + retry, **99 unit tests**, and *every* feature
+  network-fault classification + retry, **120 unit tests**, and *every* feature
   verified end-to-end against the live API (not just mocks).
+
+---
+
+## 🆕 What's new — the 2026-06 NotebookLM update
+
+Google's [June 2026 update](https://techcrunch.com/2026/06/08/notebooklms-new-update-will-help-you-build-source-repository-from-chat/)
+turned NotebookLM into an agentic researcher: **Gemini 3.5** as the default model,
+**chat-driven source discovery**, **in-notebook code execution**, transparent
+reasoning, and a wider set of export formats (`.docx`, Excel, PowerPoint, charts,
+images). These are rolling out to **AI Ultra** and **Workspace business** accounts
+first, then everyone.
+
+Two things follow for this CLI:
+
+- **`notebooklm whoami`** tells you which rollout your account is in — your
+  subscription tier (Free / AI Plus / AI Pro / **AI Ultra**) plus notebook/source
+  quotas. Use it to check whether the new agentic features are live for you yet.
+- The new server-side capabilities (source discovery, code execution, the new
+  export formats) ride on internal RPC endpoints we haven't reverse-engineered
+  yet. **Status: tracking upstream [notebooklm-py](https://github.com/teng-lin/notebooklm-py).**
+  Chat already benefits from Gemini 3.5 automatically once it reaches your account
+  — no CLI change needed.
+
+```bash
+notebooklm whoami --json
+# { "tier": "NOTEBOOKLM_TIER_ULTRA", "tierLabel": "AI Ultra", "notebookLimit": …, "sourceLimit": … }
+```
 
 ---
 
@@ -125,6 +152,7 @@ notebooklm list            # confirm it worked
 notebooklm login                      # browser auto-capture (no keychain)
 notebooklm login --paste              # or paste a "Copy as cURL" / Cookie header
 notebooklm status                     # check auth state
+notebooklm whoami                     # show your subscription tier + quotas
 
 # Notebooks
 notebooklm list
@@ -135,6 +163,7 @@ notebooklm delete <nb>
 # Sources
 notebooklm source add <nb> --url https://en.wikipedia.org/wiki/SpaceX
 notebooklm source add <nb> --text "..." --title "Notes"
+notebooklm source add <nb> --file ./paper.pdf --wait   # upload a real PDF/image/docx/audio
 notebooklm source list <nb>
 
 # Chat (with citations + follow-ups)
@@ -192,11 +221,13 @@ await client.artifacts.waitForCompletion(nb.id, taskId);
 |---|:---:|
 | RPC encoder/decoder · auth + cookies · session/transport | ✅ |
 | `notebooks` — list / create / get / rename / delete | ✅ |
-| `sources` — add URL/YouTube/text · list · delete · wait | ✅ |
+| `sources` — add URL/YouTube/**file** (resumable upload) · list · delete · wait | ✅ |
 | `chat` — ask · **citations** · **multi-turn** | ✅ |
 | `artifacts` — generate · list · poll · download · delete · rename · export | ✅ |
 | `notes` (CRUD) · `share` (public link) · `research` (web/Drive) | ✅ |
+| `whoami` — subscription tier + account quotas | ✅ |
 | Mind maps · per-user share ACLs · save-answer-as-note | ⏳ planned |
+| 2026-06 agentic update — source discovery · code exec · new exports | ⏳ tracking upstream |
 
 ---
 

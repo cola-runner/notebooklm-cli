@@ -16,6 +16,7 @@ import { NotesAPI } from './api/notes.js';
 import { ResearchAPI } from './api/research.js';
 import { ShareAPI } from './api/share.js';
 import { SourcesAPI } from './api/sources.js';
+import { UserAPI } from './api/user.js';
 import { getStoragePath } from './auth/paths.js';
 import { loadStorageState } from './auth/storage.js';
 import type { StorageState } from './auth/types.js';
@@ -45,6 +46,7 @@ export class NotebookLMClient {
   readonly notes: NotesAPI;
   readonly share: ShareAPI;
   readonly research: ResearchAPI;
+  readonly user: UserAPI;
   private readonly readOnlyStorage: boolean;
 
   private constructor(session: Session, readOnlyStorage: boolean) {
@@ -57,6 +59,7 @@ export class NotebookLMClient {
     this.notes = new NotesAPI(session);
     this.share = new ShareAPI(session);
     this.research = new ResearchAPI(session);
+    this.user = new UserAPI(session);
   }
 
   /**

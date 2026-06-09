@@ -39,6 +39,9 @@ export interface SessionOptions {
 export interface RpcCallOptions {
   /** If true, return null instead of throwing on null result. */
   allowNull?: boolean;
+  /** Override the `source-path` query param (defaults to `/`). Some RPCs —
+   * e.g. ADD_SOURCE_FILE — must be scoped to `/notebook/<id>`. */
+  sourcePath?: string;
 }
 
 export class Session {
@@ -115,7 +118,7 @@ export class Session {
     const body = buildRequestBody(encoded, tokens.csrf);
     const url = new URL(getBatchexecuteUrl());
     url.searchParams.set('rpcids', resolvedId);
-    url.searchParams.set('source-path', '/');
+    url.searchParams.set('source-path', opts.sourcePath ?? '/');
     url.searchParams.set('f.sid', tokens.sessionId);
     url.searchParams.set('bl', 'boq_labs-tailwind-frontend_20250101.00_p0');
     url.searchParams.set('hl', 'en');

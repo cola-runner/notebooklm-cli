@@ -5,11 +5,25 @@
  * `_source_add.py` + `_source_listing.py`.
  */
 
+import { createReadStream } from 'node:fs';
+import { stat } from 'node:fs/promises';
+import { basename, resolve } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
-import { SourceStatus } from '../rpc/types.js';
+import { request } from 'undici';
+import { baseHeaders } from '../auth/headers.js';
+import { AuthError } from '../rpc/errors.js';
+import { SourceStatus, getUploadUrl } from '../rpc/types.js';
 import type { Session } from '../session/session.js';
 import { type Source, parseSource } from '../types.js';
 import { isYoutubeUrl } from '../urlUtils.js';
+import {
+  assertUploadFileSupported,
+  buildRegisterFileParams,
+  buildUploadStartBody,
+  extractFileSourceId,
+  guessUploadContentType,
+  validateResumableUploadUrl,
+} from './sourceUpload.js';
 
 const TERMINAL_STATUSES = new Set<number>([SourceStatus.READY, SourceStatus.ERROR]);
 
@@ -74,6 +88,42 @@ export class SourcesAPI {
     return source;
   }
 
+  /**
+   * Add a local file (PDF, image, docx, audio, …) as a source via Google's
+   * resumable upload, so NotebookLM ingests the real bytes natively.
+   *
+   * Three steps: register the source (ADD_SOURCE_FILE → SOURCE_ID), open a
+   * resumable upload session, then stream the bytes to it. Returns the new
+   * source, which may still be PROCESSING — use `waitUntilReady` to block.
+   *
+   * @throws on a missing/non-regular file, an unsupported type (HTML), or a
+   *   protocol failure. The file is streamed, never buffered whole.
+   */
+  async addFile(
+    notebookId: string,
+    filePath: string,
+    opts: { mime?: string } = {},
+  ): Promise<Source> {
+    const resolved = resolve(filePath);
+    const stats = await stat(resolved);
+    if (!stats.isFile()) throw new Error(`Not a regular file: ${resolved}`);
+    const filename = basename(resolved);
+    const contentType = guessUploadContentType(filename, opts.mime);
+    assertUploadFileSupported(filename, contentType);
+
+    const sourceId = await this.registerFileSource(notebookId, filename);
+    const uploadUrl = await this.startResumableUpload(
+      notebookId,
+      filename,
+      stats.size,
+      sourceId,
+      contentType,
+    );
+    await this.uploadBytes(uploadUrl, resolved, stats.size);
+
+    return { id: sourceId, title: filename, status: SourceStatus.PROCESSING };
+  }
+
   /** Delete a source from a notebook. Returns true on success. */
   async delete(notebookId: string, sourceId: string): Promise<boolean> {
     await this.session.call('DELETE_SOURCE', [[[sourceId]]], { allowNull: true });
@@ -122,6 +172,85 @@ export class SourcesAPI {
       [2],
       [1, null, null, null, null, null, null, null, null, null, [1]],
     ];
+  }
+
+  /**
+   * Register a file-source intent and resolve its SOURCE_ID. ADD_SOURCE_FILE is
+   * scoped to `/notebook/<id>` (not the default `/`). If the response carries no
+   * trustworthy id, probe the source list once for a freshly-titled match.
+   */
+  private async registerFileSource(notebookId: string, filename: string): Promise<string> {
+    const result = await this.session.call<unknown>(
+      'ADD_SOURCE_FILE',
+      buildRegisterFileParams(filename, notebookId),
+      { sourcePath: `/notebook/${notebookId}` },
+    );
+    const sourceId = extractFileSourceId(result, filename);
+    if (sourceId) return sourceId;
+
+    const matches = (await this.list(notebookId)).filter((s) => s.title === filename);
+    if (matches.length === 1) return matches[0]!.id;
+    throw new Error(
+      `ADD_SOURCE_FILE returned no usable SOURCE_ID for "${filename}" and the source-list probe was inconclusive. Check the notebook before retrying.`,
+    );
+  }
+
+  /** Open a Scotty resumable-upload session; returns the validated upload URL. */
+  private async startResumableUpload(
+    notebookId: string,
+    filename: string,
+    fileSize: number,
+    sourceId: string,
+    contentType: string,
+  ): Promise<string> {
+    const res = await request(`${getUploadUrl()}?authuser=0`, {
+      method: 'POST',
+      headers: {
+        ...baseHeaders(),
+        Accept: '*/*',
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+        'x-goog-authuser': '0',
+        'x-goog-upload-command': 'start',
+        'x-goog-upload-header-content-length': String(fileSize),
+        'x-goog-upload-header-content-type': contentType,
+        'x-goog-upload-protocol': 'resumable',
+        Cookie: this.session.transport.cookieHeader(),
+      },
+      body: buildUploadStartBody(notebookId, filename, sourceId),
+    });
+    await res.body.text(); // drain
+    if (res.statusCode === 401 || res.statusCode === 403) {
+      throw new AuthError(`Upload session start rejected (HTTP ${res.statusCode}).`);
+    }
+    if (res.statusCode >= 400) {
+      throw new Error(`Failed to start upload session (HTTP ${res.statusCode}) for ${filename}`);
+    }
+    const header = res.headers['x-goog-upload-url'];
+    const uploadUrl = Array.isArray(header) ? header[0] : header;
+    if (!uploadUrl) throw new Error('Upload start response carried no x-goog-upload-url header');
+    return validateResumableUploadUrl(uploadUrl);
+  }
+
+  /** Stream the file bytes to the resumable session and finalize in one POST. */
+  private async uploadBytes(uploadUrl: string, filePath: string, fileSize: number): Promise<void> {
+    const res = await request(uploadUrl, {
+      method: 'POST',
+      headers: {
+        ...baseHeaders(),
+        Accept: '*/*',
+        'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+        'x-goog-authuser': '0',
+        'x-goog-upload-command': 'upload, finalize',
+        'x-goog-upload-offset': '0',
+        'Content-Length': String(fileSize),
+        Cookie: this.session.transport.cookieHeader(),
+      },
+      body: createReadStream(filePath),
+    });
+    await res.body.text(); // drain
+    if (res.statusCode >= 400) {
+      throw new Error(`File upload finalize failed (HTTP ${res.statusCode})`);
+    }
   }
 }
 

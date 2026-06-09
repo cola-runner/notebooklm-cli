@@ -138,6 +138,24 @@ export interface AskResult {
   conversationId?: string;
 }
 
+/**
+ * The authenticated user's subscription tier and account limits, as reported
+ * by GET_USER_TIER (+ GET_USER_SETTINGS). Used by `notebooklm whoami` so a
+ * caller can tell which feature rollout their account is in.
+ */
+export interface UserAccount {
+  /** Raw tier constant, e.g. "NOTEBOOKLM_TIER_ULTRA" (undefined if not found). */
+  tier?: string;
+  /** Friendly label: "Free" | "AI Plus" | "AI Pro" | "AI Ultra" | "Unknown". */
+  tierLabel: string;
+  /** Max notebooks for this account (from GET_USER_SETTINGS), when available. */
+  notebookLimit?: number;
+  /** Max sources per notebook, when available. */
+  sourceLimit?: number;
+  /** Preferred interface language code, when available. */
+  language?: string;
+}
+
 /** Parse the raw nested-array API payload into a typed `Notebook`. */
 export function parseNotebook(data: unknown): Notebook {
   if (!Array.isArray(data)) {

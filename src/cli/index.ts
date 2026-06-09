@@ -54,7 +54,7 @@ if (activeProxy && process.env['NOTEBOOKLM_DEBUG'] === '1') {
 
 const program = new Command();
 
-program.name('notebooklm').description('Unofficial NotebookLM CLI for Node.js').version('0.1.0');
+program.name('notebooklm').description('Unofficial NotebookLM CLI for Node.js').version('0.1.1');
 
 program
   .command('login')
@@ -178,6 +178,36 @@ program
   });
 
 program
+  .command('whoami')
+  .description('Show your account subscription tier and limits')
+  .option('--storage <path>', 'Override storage_state.json path')
+  .option('--json', 'Output as JSON', false)
+  .action(async (opts: { storage?: string; json: boolean }) => {
+    try {
+      const client = await openClient(opts.storage);
+      const account = await client.user.whoami();
+      await client.save();
+      emit(opts, account, (a) => {
+        console.log(`Tier: ${a.tierLabel}${a.tier ? `  (${a.tier})` : ''}`);
+        if (a.notebookLimit !== undefined) console.log(`Notebooks:  up to ${a.notebookLimit}`);
+        if (a.sourceLimit !== undefined) console.log(`Sources/nb: up to ${a.sourceLimit}`);
+        if (a.language) console.log(`Language:   ${a.language}`);
+        if (a.tier === 'NOTEBOOKLM_TIER_ULTRA') {
+          console.log(
+            '\n✓ AI Ultra — eligible for the 2026-06 agentic update (Gemini 3.5,\n  chat-driven source discovery, in-notebook code execution).',
+          );
+        } else if (a.tier) {
+          console.log(
+            '\nℹ The 2026-06 agentic update rolled out to AI Ultra and Workspace business\n  first; your tier may not have it yet.',
+          );
+        }
+      });
+    } catch (err) {
+      fail(opts, err);
+    }
+  });
+
+program
   .command('list')
   .description('List notebooks')
   .option('--storage <path>', 'Override storage_state.json path')
@@ -280,9 +310,11 @@ source
 
 source
   .command('add <notebookId>')
-  .description('Add a source to a notebook (URL, YouTube, or --text)')
+  .description('Add a source to a notebook (--url, --text, or --file)')
   .option('--url <url>', 'Add a URL or YouTube source')
   .option('--text <content>', 'Add a text snippet')
+  .option('--file <path>', 'Upload a local file (PDF, image, docx, audio, …)')
+  .option('--mime <type>', 'Override the detected MIME type for --file')
   .option('--title <title>', 'Title for the text snippet', 'Untitled')
   .option('--wait', 'Wait for the source to finish processing', false)
   .option('--timeout <seconds>', 'Max seconds to wait when --wait is set', '180')
@@ -294,6 +326,8 @@ source
       opts: {
         url?: string;
         text?: string;
+        file?: string;
+        mime?: string;
         title: string;
         wait: boolean;
         timeout: string;
@@ -302,20 +336,26 @@ source
       },
     ) => {
       try {
-        if (!opts.url && !opts.text) {
+        const provided = [opts.url, opts.text, opts.file].filter(Boolean).length;
+        if (provided !== 1) {
+          const message = 'Provide exactly one of --url, --text, or --file';
           if (opts.json) {
-            process.stderr.write(
-              `${JSON.stringify({ error: { code: 'USAGE', message: 'Provide exactly one of --url or --text' } })}\n`,
-            );
+            process.stderr.write(`${JSON.stringify({ error: { code: 'USAGE', message } })}\n`);
           } else {
-            console.error('Provide exactly one of --url or --text');
+            console.error(message);
           }
           process.exit(EXIT.USAGE);
         }
         const client = await openClient(opts.storage);
         let src = opts.url
           ? await client.sources.addUrl(notebookId, opts.url)
-          : await client.sources.addText(notebookId, opts.title, opts.text!);
+          : opts.file
+            ? await client.sources.addFile(
+                notebookId,
+                opts.file,
+                opts.mime ? { mime: opts.mime } : {},
+              )
+            : await client.sources.addText(notebookId, opts.title, opts.text!);
         if (opts.wait) {
           src = await client.sources.waitUntilReady(notebookId, src.id, {
             timeoutMs: Number(opts.timeout) * 1000,
