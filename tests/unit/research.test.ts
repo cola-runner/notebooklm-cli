@@ -96,3 +96,24 @@ describe('ResearchAPI.importSources', () => {
     ).rejects.toThrow(/does not match/);
   });
 });
+
+describe('ResearchAPI.cancel', () => {
+  it('sends CANCEL_RESEARCH keyed on the run id, scoped to the notebook path', async () => {
+    // Local mock — captures the call options (sourcePath) the shared helper drops.
+    const calls: Array<{ method: string; params: unknown[]; opts?: unknown }> = [];
+    const session = {
+      call: async (method: string, params: unknown[], opts?: unknown) => {
+        calls.push({ method, params, opts });
+        return [];
+      },
+    } as unknown as Session;
+    const api = new ResearchAPI(session);
+
+    await expect(api.cancel('nb-1', 'run-7')).resolves.toBeUndefined();
+    expect(calls[0]).toEqual({
+      method: 'CANCEL_RESEARCH',
+      params: [null, null, 'run-7'],
+      opts: { allowNull: true, sourcePath: '/notebook/nb-1' },
+    });
+  });
+});

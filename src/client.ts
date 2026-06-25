@@ -11,6 +11,7 @@
 
 import { ArtifactsAPI } from './api/artifacts.js';
 import { ChatAPI } from './api/chat.js';
+import { LabelsAPI } from './api/labels.js';
 import { NotebooksAPI } from './api/notebooks.js';
 import { NotesAPI } from './api/notes.js';
 import { ResearchAPI } from './api/research.js';
@@ -41,6 +42,7 @@ export class NotebookLMClient {
   readonly session: Session;
   readonly notebooks: NotebooksAPI;
   readonly sources: SourcesAPI;
+  readonly labels: LabelsAPI;
   readonly chat: ChatAPI;
   readonly artifacts: ArtifactsAPI;
   readonly notes: NotesAPI;
@@ -54,6 +56,7 @@ export class NotebookLMClient {
     this.readOnlyStorage = readOnlyStorage;
     this.notebooks = new NotebooksAPI(session);
     this.sources = new SourcesAPI(session);
+    this.labels = new LabelsAPI(session);
     this.chat = new ChatAPI(session);
     this.artifacts = new ArtifactsAPI(session, this.notebooks);
     this.notes = new NotesAPI(session);

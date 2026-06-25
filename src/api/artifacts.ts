@@ -205,15 +205,22 @@ export class ArtifactsAPI {
     const sourceIds = opts.sourceIds ?? (await this.notebooks.getSourceIds(notebookId));
     const triple = nestSourceIds(sourceIds, 2);
     const double = nestSourceIds(sourceIds, 1);
+    // CUSTOM is the proto-default (0); the live web UI omits it (sends null) and
+    // carries the visual prompt in the trailing slot. Any other style sends its
+    // code; an unset style defaults to AUTO_SELECT, not null. (notebooklm-py de58d62)
+    const styleCode =
+      opts.videoStyle === VideoStyleEnum.CUSTOM
+        ? null
+        : (opts.videoStyle ?? VideoStyleEnum.AUTO_SELECT);
     const videoConfig: unknown[] = [
       double,
       language,
       opts.instructions ?? null,
       null,
       opts.videoFormat ?? null,
-      opts.videoStyle ?? null,
+      styleCode,
     ];
-    if (stylePrompt) videoConfig.push(stylePrompt);
+    if (opts.videoStyle === VideoStyleEnum.CUSTOM && stylePrompt) videoConfig.push(stylePrompt);
     const params = [
       [2],
       notebookId,
@@ -714,6 +721,42 @@ export class ArtifactsAPI {
     await this.session.call('RENAME_ARTIFACT', [[artifactId, newTitle], [['title']]], {
       allowNull: true,
     });
+  }
+
+  /**
+   * Retry a failed Studio artifact in place (the UI "Retry" action). Re-runs
+   * generation without deleting it first; the same `artifactId` is preserved as
+   * the task id, so `pollStatus`/`waitForCompletion` flows keep working. An
+   * accepted retry returns `status: 'in_progress'`.
+   *
+   * `notebookId` is routing-only (sets the `source-path` header); the artifact
+   * is identified solely by `artifactId`. A null result or a row with no
+   * artifact id means retry is unavailable/refused and throws (rather than
+   * reporting a silent failure). Ported from notebooklm-py `retry_failed`.
+   */
+  async retryFailed(notebookId: string, artifactId: string): Promise<GenerationStatus> {
+    // The in-place retry RPC takes the full Studio client-options envelope as
+    // param 0 (per the upstream RETRY_ARTIFACT golden fixture), not the short
+    // `[2]` form the other ops use here.
+    const clientOptions = [
+      2,
+      null,
+      null,
+      [1, null, null, null, null, null, null, null, null, null, [1]],
+      [[1, 4, 8, 2, 3, 6]],
+    ];
+    const result = await this.session.call<unknown>('RETRY_ARTIFACT', [clientOptions, artifactId], {
+      allowNull: true,
+      sourcePath: `/notebook/${notebookId}`,
+    });
+    if (result === null || result === undefined) {
+      throw new ArtifactError(`Retry unavailable or refused for artifact ${artifactId}.`);
+    }
+    const status = parseGenerationResult(result);
+    if (!status.taskId) {
+      throw new ArtifactError(`RETRY_ARTIFACT returned no artifact id for ${artifactId}.`);
+    }
+    return status;
   }
 
   /** Export an artifact to Google Docs (1) or Sheets (2). Returns the raw RPC result. */

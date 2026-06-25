@@ -13,7 +13,7 @@ exit codes you can branch on.
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-3C873A.svg)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6.svg)](tsconfig.json)
-[![Tests](https://img.shields.io/badge/tests-120%20passing-2EA44F.svg)](tests)
+[![Tests](https://img.shields.io/badge/tests-147%20passing-2EA44F.svg)](tests)
 
 </div>
 
@@ -69,12 +69,15 @@ Progress goes to **stderr**, results to **stdout** — pipe one without the othe
   conversations via `ask --conversation-id`.
 - 🎨 **Every studio artifact** — audio, video (incl. cinematic), report
   (briefing / study guide / blog post / custom), quiz, flashcards, infographic,
-  slide deck, data table — **generate *and* download**.
-- 🔬 **Research · notes · sharing** — web/Drive research discovery + import,
-  notes CRUD, and public-link sharing.
+  slide deck, data table — **generate *and* download** (and **retry** a failed one).
+- 🏷️ **Organize & steer** — group a notebook's sources into **labels** (manual or
+  AI auto-grouping), filter `source list` by label, and get **AI-suggested
+  prompts** for what to ask next.
+- 🔬 **Research · notes · sharing** — web/Drive research discovery + import (with
+  **cancel**), notes CRUD, and public-link sharing.
 - 🧱 **Solid by construction** — TypeScript strict mode, `undici` transport with
-  network-fault classification + retry, **120 unit tests**, and *every* feature
-  verified end-to-end against the live API (not just mocks).
+  network-fault classification + retry, and **147 unit tests** that pin the
+  position-sensitive wire format against captured fixtures.
 
 ---
 
@@ -165,10 +168,20 @@ notebooklm source add <nb> --url https://en.wikipedia.org/wiki/SpaceX
 notebooklm source add <nb> --text "..." --title "Notes"
 notebooklm source add <nb> --file ./paper.pdf --wait   # upload a real PDF/image/docx/audio
 notebooklm source list <nb>
+notebooklm source list <nb> --label "Tax docs"          # only sources in a label
+
+# Labels (group a notebook's sources by topic)
+notebooklm label list <nb>
+notebooklm label create <nb> "Tax docs" --emoji 📁
+notebooklm label generate <nb>                          # AI auto-grouping (unlabeled sources)
+notebooklm label assign <nb> <labelId> <sourceId...>
+notebooklm label unassign <nb> <labelId> <sourceId...>
+notebooklm label delete <nb> <labelId...>
 
 # Chat (with citations + follow-ups)
 notebooklm ask <nb> "What is this about?"
 notebooklm ask <nb> "And what about that?" --conversation-id <id>
+notebooklm suggest-prompts <nb>                          # AI-suggested questions to ask
 
 # Notes
 notebooklm note create <nb> --title "T" --content "..."
@@ -181,11 +194,13 @@ notebooklm share status <nb>
 # Research (web/Drive discovery → import)
 notebooklm research start <nb> "history of the Falcon 9" --wait
 notebooklm research import <nb> <taskId> --limit 5
+notebooklm research cancel <nb> <taskId>                 # stop an in-flight run
 
 # Studio artifacts — generate & download
 notebooklm generate audio <nb> --format deep-dive --wait
 notebooklm generate report <nb> --format study-guide --wait
 notebooklm artifact list <nb>
+notebooklm artifact retry <nb> <artifactId>             # re-run a failed artifact
 notebooklm download audio <nb> ./overview.mp4
 notebooklm download slide-deck <nb> ./deck.pdf
 ```
@@ -221,10 +236,11 @@ await client.artifacts.waitForCompletion(nb.id, taskId);
 |---|:---:|
 | RPC encoder/decoder · auth + cookies · session/transport | ✅ |
 | `notebooks` — list / create / get / rename / delete | ✅ |
-| `sources` — add URL/YouTube/**file** (resumable upload) · list · delete · wait | ✅ |
-| `chat` — ask · **citations** · **multi-turn** | ✅ |
-| `artifacts` — generate · list · poll · download · delete · rename · export | ✅ |
-| `notes` (CRUD) · `share` (public link) · `research` (web/Drive) | ✅ |
+| `sources` — add URL/YouTube/**file** (resumable upload) · list (+ `--label`) · delete · wait | ✅ |
+| `labels` — create · list · **AI auto-grouping** · rename · assign/unassign · delete | ✅ |
+| `chat` — ask · **citations** · **multi-turn** · **suggest-prompts** | ✅ |
+| `artifacts` — generate · list · poll · download · delete · rename · export · **retry** | ✅ |
+| `notes` (CRUD) · `share` (public link) · `research` (web/Drive · **cancel**) | ✅ |
 | `whoami` — subscription tier + account quotas | ✅ |
 | Mind maps · per-user share ACLs · save-answer-as-note | ⏳ planned |
 | 2026-06 agentic update — source discovery · code exec · new exports | ⏳ tracking upstream |

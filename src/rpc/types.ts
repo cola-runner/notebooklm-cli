@@ -52,6 +52,12 @@ export const RPCMethod = {
   CHECK_SOURCE_FRESHNESS: 'yR9Yof',
   UPDATE_SOURCE: 'b7Wfje',
 
+  // Source labels (topic groupings of sources within a notebook)
+  CREATE_LABEL: 'agX4Bc', // also AI auto-grouping ("Auto-label"/"Reorganize")
+  LIST_LABELS: 'I3xc3c',
+  UPDATE_LABEL: 'le8sX', // rename / set emoji / assign / unassign a source
+  DELETE_LABEL: 'GyzE7e', // batch
+
   // Summary and query
   SUMMARIZE: 'VfAZjd',
   GET_SOURCE_GUIDE: 'tr032e',
@@ -66,12 +72,14 @@ export const RPCMethod = {
   SHARE_ARTIFACT: 'RGP97b',
   GET_INTERACTIVE_HTML: 'v9rmvd',
   REVISE_SLIDE: 'KmcKPe',
+  RETRY_ARTIFACT: 'Rytqqe', // -> in-place retry of a failed Studio artifact
 
   // Research
   START_FAST_RESEARCH: 'Ljjv0c',
   START_DEEP_RESEARCH: 'QA9ei',
   POLL_RESEARCH: 'e3bVqc',
   IMPORT_RESEARCH: 'LBwxtb',
+  CANCEL_RESEARCH: 'Zbrupe', // -> CancelDiscoverSourcesJob
 
   // Note and mind-map operations
   GENERATE_MIND_MAP: 'yyryJe',
@@ -84,6 +92,7 @@ export const RPCMethod = {
   GET_LAST_CONVERSATION_ID: 'hPTbtc',
   GET_CONVERSATION_TURNS: 'khqZz',
   DELETE_CONVERSATION: 'J7Gthc',
+  SUGGEST_PROMPTS: 'otmP3b', // -> GeneratePromptSuggestions
 
   // Sharing operations (notebook-level)
   SHARE_NOTEBOOK: 'QDyure',
@@ -170,17 +179,22 @@ export const AudioFormat = { DEEP_DIVE: 1, BRIEF: 2, CRITIQUE: 3, DEBATE: 4 } as
 export const AudioLength = { SHORT: 1, DEFAULT: 2, LONG: 3 } as const;
 
 export const VideoFormat = { EXPLAINER: 1, BRIEF: 2, CINEMATIC: 3 } as const;
+// Style codes are the live web-bundle values, not a tidy 1..N sequence — Google
+// assigns them out of order. Corrected against notebooklm-py (de58d62); the old
+// sequential guess sent e.g. ANIME=6, which the backend silently reads as
+// WATERCOLOR. CUSTOM is the proto-default 0 and is serialized as null on the
+// wire (see generateVideo), with the visual prompt carried in a separate slot.
 export const VideoStyle = {
   AUTO_SELECT: 1,
-  CUSTOM: 2,
-  CLASSIC: 3,
-  WHITEBOARD: 4,
-  KAWAII: 5,
-  ANIME: 6,
-  WATERCOLOR: 7,
+  CUSTOM: 0,
+  CLASSIC: 2,
+  WHITEBOARD: 3,
+  KAWAII: 9,
+  ANIME: 7,
+  WATERCOLOR: 6,
   RETRO_PRINT: 8,
-  HERITAGE: 9,
-  PAPER_CRAFT: 10,
+  HERITAGE: 4,
+  PAPER_CRAFT: 5,
 } as const;
 
 export const QuizQuantity = { FEWER: 1, STANDARD: 2, MORE: 2 } as const;

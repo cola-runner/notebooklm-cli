@@ -260,6 +260,26 @@ export function registerArtifactCommands(program: Command): void {
       },
     );
 
+  artifact
+    .command('retry <notebookId> <artifactId>')
+    .description('Retry a failed artifact in place (keeps the same id; poll to track)')
+    .option('--storage <path>', 'Override storage_state.json path')
+    .option('--json', 'Output as JSON', false)
+    .action(
+      async (notebookId: string, artifactId: string, opts: { storage?: string; json: boolean }) => {
+        try {
+          const client = await openClient(opts.storage);
+          const status = await client.artifacts.retryFailed(notebookId, artifactId);
+          await client.save();
+          emit(opts, status, (s) =>
+            console.log(`Retry accepted for ${s.taskId} (status=${s.status}); poll to track.`),
+          );
+        } catch (err) {
+          fail(opts, err);
+        }
+      },
+    );
+
   // ---- download ----
   const download = program.command('download').description('Download a completed artifact');
 

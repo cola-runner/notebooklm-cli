@@ -20,6 +20,10 @@ const TIER_LABELS: Record<string, string> = {
   NOTEBOOKLM_TIER_STANDARD: 'Free',
   NOTEBOOKLM_TIER_PLUS: 'AI Plus',
   NOTEBOOKLM_TIER_PRO: 'AI Pro',
+  // Consumer AI Pro reports this variant in the wild (live-observed 2026-06-16);
+  // same plan as NOTEBOOKLM_TIER_PRO. (notebooklm-py d9fcc0b)
+  NOTEBOOKLM_TIER_PRO_CONSUMER_USER: 'AI Pro',
+  NOTEBOOKLM_TIER_PRO_DASHER_END_USER: 'Workspace Pro',
   NOTEBOOKLM_TIER_ULTRA: 'AI Ultra',
 };
 

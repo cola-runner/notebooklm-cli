@@ -11,6 +11,7 @@
  */
 
 import { Command } from 'commander';
+import { SUGGEST_PROMPTS_MODE_MAX, SUGGEST_PROMPTS_MODE_MIN } from '../api/notebooks.js';
 import { importChromeCookies } from '../auth/chromeCookies.js';
 import { getStoragePath } from '../auth/paths.js';
 import { findMissingRequiredCookies, loadStorageState, saveStorageState } from '../auth/storage.js';
@@ -18,6 +19,7 @@ import { configureProxyFromEnv } from '../proxy.js';
 import type { ResearchPollResult, ShareStatus } from '../types.js';
 import { registerArtifactCommands } from './artifactCommands.js';
 import { handleError, openClient } from './helpers.js';
+import { registerLabelCommands } from './labelCommands.js';
 import { runBrowserLogin } from './loginBrowser.js';
 import { runPasteLogin } from './loginPaste.js';
 import { readAllStdin } from './loginShared.js';
@@ -54,7 +56,7 @@ if (activeProxy && process.env['NOTEBOOKLM_DEBUG'] === '1') {
 
 const program = new Command();
 
-program.name('notebooklm').description('Unofficial NotebookLM CLI for Node.js').version('0.1.1');
+program.name('notebooklm').description('Unofficial NotebookLM CLI for Node.js').version('0.1.2');
 
 program
   .command('login')
@@ -208,6 +210,67 @@ program
   });
 
 program
+  .command('suggest-prompts <notebookId>')
+  .description('Get AI-suggested prompts to ask a notebook')
+  .option(
+    '--mode <n>',
+    'Surface selector 1-9 (4=chat, 5=critique, 6=debate, 8=quiz, 9=flashcards)',
+    '4',
+  )
+  .option('--query <text>', 'Optional free-text steer for the kind of prompts')
+  .option('--source-id <ids...>', 'Scope to specific source ids (default: all sources)')
+  .option('--storage <path>', 'Override storage_state.json path')
+  .option('--json', 'Output as JSON', false)
+  .action(
+    async (
+      notebookId: string,
+      opts: {
+        mode: string;
+        query?: string;
+        sourceId?: string[];
+        storage?: string;
+        json: boolean;
+      },
+    ) => {
+      try {
+        const mode = Number(opts.mode);
+        if (
+          !Number.isInteger(mode) ||
+          mode < SUGGEST_PROMPTS_MODE_MIN ||
+          mode > SUGGEST_PROMPTS_MODE_MAX
+        ) {
+          const message = `--mode must be an integer in ${SUGGEST_PROMPTS_MODE_MIN}..${SUGGEST_PROMPTS_MODE_MAX}`;
+          if (opts.json) {
+            process.stderr.write(`${JSON.stringify({ error: { code: 'USAGE', message } })}\n`);
+          } else {
+            console.error(message);
+          }
+          process.exit(EXIT.USAGE);
+        }
+        const client = await openClient(opts.storage);
+        const suggestions = await client.notebooks.suggestPrompts(notebookId, {
+          mode,
+          ...(opts.query !== undefined ? { query: opts.query } : {}),
+          ...(opts.sourceId !== undefined ? { sourceIds: opts.sourceId } : {}),
+        });
+        await client.save();
+        emit(opts, suggestions, (rows) => {
+          if (rows.length === 0) {
+            console.log('No suggestions returned.');
+            return;
+          }
+          for (const s of rows) {
+            console.log(`• ${s.title}`);
+            console.log(`  ${s.prompt.replace(/\n/g, '\n  ')}`);
+          }
+        });
+      } catch (err) {
+        fail(opts, err);
+      }
+    },
+  );
+
+program
   .command('list')
   .description('List notebooks')
   .option('--storage <path>', 'Override storage_state.json path')
@@ -287,12 +350,28 @@ const source = program.command('source').description('Source operations within a
 source
   .command('list <notebookId>')
   .description('List sources in a notebook')
+  .option('--label <idOrName>', 'Only sources in this label (by id or name)')
   .option('--storage <path>', 'Override storage_state.json path')
   .option('--json', 'Output as JSON', false)
-  .action(async (notebookId: string, opts: { storage?: string; json: boolean }) => {
+  .action(async (notebookId: string, opts: { label?: string; storage?: string; json: boolean }) => {
     try {
       const client = await openClient(opts.storage);
-      const sources = await client.sources.list(notebookId);
+      let sources = await client.sources.list(notebookId);
+      if (opts.label !== undefined) {
+        const labels = await client.labels.list(notebookId);
+        const match = labels.find((l) => l.id === opts.label || l.name === opts.label);
+        if (!match) {
+          const message = `No label matching "${opts.label}" in this notebook`;
+          if (opts.json) {
+            process.stderr.write(`${JSON.stringify({ error: { code: 'NOT_FOUND', message } })}\n`);
+          } else {
+            console.error(message);
+          }
+          process.exit(EXIT.NOT_FOUND);
+        }
+        const inLabel = new Set(match.sourceIds);
+        sources = sources.filter((s) => inLabel.has(s.id));
+      }
       await client.save();
       emit(opts, sources, (list) => {
         if (list.length === 0) {
@@ -699,7 +778,28 @@ research
     },
   );
 
+research
+  .command('cancel <notebookId> <taskId>')
+  .description('Cancel an in-flight research task (fire-and-forget; poll to confirm)')
+  .option('--storage <path>', 'Override storage_state.json path')
+  .option('--json', 'Output as JSON', false)
+  .action(async (notebookId: string, taskId: string, opts: { storage?: string; json: boolean }) => {
+    try {
+      const client = await openClient(opts.storage);
+      await client.research.cancel(notebookId, taskId);
+      await client.save();
+      // The server never confirms a cancel, so report what we asked for, not a
+      // success we can't observe. `poll` is how you verify it actually stopped.
+      emit(opts, { requested: true, taskId }, () => {
+        console.log(`Cancel requested for task ${taskId} (poll to confirm it stopped).`);
+      });
+    } catch (err) {
+      fail(opts, err);
+    }
+  });
+
 registerArtifactCommands(program);
+registerLabelCommands(program);
 
 program.parseAsync(process.argv).catch((err) => {
   handleError(err);

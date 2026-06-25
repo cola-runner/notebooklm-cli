@@ -9,6 +9,12 @@ describe('tierLabelFor', () => {
     expect(tierLabelFor('NOTEBOOKLM_TIER_ULTRA')).toBe('AI Ultra');
   });
 
+  it('maps the consumer/dasher Pro variants seen in the wild', () => {
+    // Consumer AI Pro reports this instead of plain _PRO (notebooklm-py d9fcc0b).
+    expect(tierLabelFor('NOTEBOOKLM_TIER_PRO_CONSUMER_USER')).toBe('AI Pro');
+    expect(tierLabelFor('NOTEBOOKLM_TIER_PRO_DASHER_END_USER')).toBe('Workspace Pro');
+  });
+
   it('falls back to the raw value for unknown tiers and "Unknown" for none', () => {
     expect(tierLabelFor('NOTEBOOKLM_TIER_FUTURE')).toBe('NOTEBOOKLM_TIER_FUTURE');
     expect(tierLabelFor(undefined)).toBe('Unknown');

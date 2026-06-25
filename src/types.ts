@@ -156,6 +156,32 @@ export interface UserAccount {
   language?: string;
 }
 
+/** One AI-suggested prompt for a notebook (from SUGGEST_PROMPTS). */
+export interface PromptSuggestion {
+  /** Short title for the suggestion. */
+  title: string;
+  /** A ready-to-send prompt, often multi-line. */
+  prompt: string;
+}
+
+/**
+ * A NotebookLM source label — a topic grouping of the sources within a notebook.
+ * Notebook-scoped; membership is many-to-many (a source may be in several
+ * labels, and a label owns a list of source ids).
+ */
+export interface Label {
+  /** Label id (UUID). */
+  id: string;
+  /** Display name. */
+  name: string;
+  /** Owning notebook id, when known. */
+  notebookId?: string;
+  /** Optional emoji icon. */
+  emoji?: string;
+  /** Source ids assigned to this label (empty for a fresh label). */
+  sourceIds: string[];
+}
+
 /** Parse the raw nested-array API payload into a typed `Notebook`. */
 export function parseNotebook(data: unknown): Notebook {
   if (!Array.isArray(data)) {

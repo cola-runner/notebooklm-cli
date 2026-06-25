@@ -204,6 +204,23 @@ export class ResearchAPI {
     return imported;
   }
 
+  /**
+   * Cancel an in-flight research run. Fire-and-forget: the server returns an
+   * empty payload unconditionally and does NOT validate `runId`, so this never
+   * raises on an unknown id and carries no success signal — `poll` afterward to
+   * confirm (a cancelled in-progress run surfaces as completed/failed shortly).
+   *
+   * `notebookId` is routing context only (sets `source-path`), not an auth
+   * boundary — the server keys the cancel solely on `runId`. Pass the run's
+   * `taskId` from `poll`/`start` as `runId`. Ported from notebooklm-py `cancel()`.
+   */
+  async cancel(notebookId: string, runId: string): Promise<void> {
+    await this.session.call('CANCEL_RESEARCH', [null, null, runId], {
+      allowNull: true,
+      sourcePath: `/notebook/${notebookId}`,
+    });
+  }
+
   /** Parse one task row `[taskId, taskInfo]` into a ResearchTask. */
   private parseTask(taskData: unknown): ResearchTask | null {
     if (!Array.isArray(taskData)) return null;
