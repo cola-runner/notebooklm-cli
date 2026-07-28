@@ -10,6 +10,7 @@
  *   list            List notebooks
  */
 
+import { createRequire } from 'node:module';
 import { Command } from 'commander';
 import { SUGGEST_PROMPTS_MODE_MAX, SUGGEST_PROMPTS_MODE_MIN } from '../api/notebooks.js';
 import { importChromeCookies } from '../auth/chromeCookies.js';
@@ -56,8 +57,12 @@ if (activeProxy && process.env['NOTEBOOKLM_DEBUG'] === '1') {
 }
 
 const program = new Command();
+const packageJson = createRequire(import.meta.url)('../../package.json') as { version: string };
 
-program.name('notebooklm').description('Unofficial NotebookLM CLI for Node.js').version('0.1.2');
+program
+  .name('notebooklm')
+  .description('Unofficial NotebookLM CLI for Node.js')
+  .version(packageJson.version);
 
 program
   .command('login')
