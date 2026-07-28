@@ -196,6 +196,16 @@ export class ArtifactsAPI {
     if (opts.videoFormat === VideoFormatEnum.CINEMATIC && stylePrompt) {
       throw new ArtifactError('style_prompt is not supported for cinematic videos');
     }
+    if (
+      opts.videoFormat === VideoFormatEnum.SHORT &&
+      ((opts.videoStyle !== undefined && opts.videoStyle !== VideoStyleEnum.AUTO_SELECT) ||
+        stylePrompt)
+    ) {
+      throw new ArtifactError(
+        'videoStyle and stylePrompt are not supported for short videos ' +
+          '(short has a fixed visual style)',
+      );
+    }
     if (opts.videoStyle === VideoStyleEnum.CUSTOM && !stylePrompt) {
       throw new ArtifactError('style_prompt is required when videoStyle is CUSTOM');
     }

@@ -7,7 +7,8 @@
 
 import type { Command } from 'commander';
 import type { GenerationStatus } from '../artifactParse.js';
-import { AudioFormat, AudioLength, ReportFormat } from '../rpc/types.js';
+import { ArtifactError } from '../rpc/errors.js';
+import { AudioFormat, AudioLength, ReportFormat, VideoFormat, VideoStyle } from '../rpc/types.js';
 import { openClient } from './helpers.js';
 import { EXIT, type JsonFlag, emit, fail } from './output.js';
 
@@ -18,6 +19,53 @@ interface CommonGenOpts extends JsonFlag {
   language?: string;
   instructions?: string;
   sourceIds?: string;
+}
+
+interface VideoCliOptions {
+  format?: string;
+  style?: string;
+  stylePrompt?: string;
+}
+
+const VIDEO_FORMATS: Record<string, VideoFormat> = {
+  explainer: VideoFormat.EXPLAINER,
+  brief: VideoFormat.BRIEF,
+  cinematic: VideoFormat.CINEMATIC,
+  short: VideoFormat.SHORT,
+};
+
+const VIDEO_STYLES: Record<string, VideoStyle> = {
+  auto: VideoStyle.AUTO_SELECT,
+  classic: VideoStyle.CLASSIC,
+  whiteboard: VideoStyle.WHITEBOARD,
+  kawaii: VideoStyle.KAWAII,
+  anime: VideoStyle.ANIME,
+  watercolor: VideoStyle.WATERCOLOR,
+  'retro-print': VideoStyle.RETRO_PRINT,
+  heritage: VideoStyle.HERITAGE,
+  'paper-craft': VideoStyle.PAPER_CRAFT,
+  custom: VideoStyle.CUSTOM,
+};
+
+/** Translate user-facing video CLI values to the wire enums consumed by ArtifactsAPI. */
+export function parseVideoCliOptions(opts: VideoCliOptions): {
+  videoFormat?: VideoFormat;
+  videoStyle?: VideoStyle;
+  stylePrompt?: string;
+} {
+  const videoFormat = opts.format ? VIDEO_FORMATS[opts.format] : undefined;
+  if (opts.format && videoFormat === undefined) {
+    throw new ArtifactError(`Unknown video format: ${opts.format}`);
+  }
+  const videoStyle = opts.style ? VIDEO_STYLES[opts.style] : undefined;
+  if (opts.style && videoStyle === undefined) {
+    throw new ArtifactError(`Unknown video style: ${opts.style}`);
+  }
+  return {
+    ...(videoFormat !== undefined ? { videoFormat } : {}),
+    ...(videoStyle !== undefined ? { videoStyle } : {}),
+    ...(opts.stylePrompt ? { stylePrompt: opts.stylePrompt } : {}),
+  };
 }
 
 function parseSourceIds(raw: string | undefined): string[] | undefined {
@@ -139,13 +187,22 @@ export function registerArtifactCommands(program: Command): void {
     );
 
   // ---- generate video ----
-  withCommon(
-    generate.command('video <notebookId>').description('Generate a Video Overview'),
-  ).action(async (notebookId: string, opts: CommonGenOpts) => {
-    await runGeneration(opts, notebookId, (client) =>
-      client.artifacts.generateVideo(notebookId, baseOpts(opts)),
-    );
-  });
+  withCommon(generate.command('video <notebookId>').description('Generate a Video Overview'))
+    .option('--format <fmt>', 'explainer | brief | cinematic | short')
+    .option(
+      '--style <style>',
+      'auto | classic | whiteboard | kawaii | anime | watercolor | retro-print | heritage | paper-craft | custom',
+    )
+    .option('--style-prompt <text>', 'Custom visual style prompt (requires --style custom)')
+    .action(async (notebookId: string, opts: CommonGenOpts & VideoCliOptions) => {
+      const videoOpts = parseVideoCliOptions(opts);
+      await runGeneration(opts, notebookId, (client) =>
+        client.artifacts.generateVideo(notebookId, {
+          ...baseOpts(opts),
+          ...videoOpts,
+        }),
+      );
+    });
 
   // ---- generate report ----
   withCommon(generate.command('report <notebookId>').description('Generate a report'))

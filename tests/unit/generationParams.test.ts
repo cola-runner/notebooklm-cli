@@ -15,6 +15,7 @@ import {
   ArtifactStatus,
   InfographicDetail,
   InfographicOrientation,
+  VideoFormat,
   VideoStyle,
 } from '../../src/rpc/types.js';
 import type { Session } from '../../src/session/session.js';
@@ -109,6 +110,28 @@ describe('generation params — video style codes', () => {
     const cfg = videoConfig(lastParams());
     expect(cfg[5]).toBeNull();
     expect(cfg[6]).toBe('noir comic');
+  });
+
+  it('sends short-form video as format code 4', async () => {
+    const { api, lastParams } = makeApi();
+    await api.generateVideo('nb', { videoFormat: VideoFormat.SHORT });
+    expect(videoConfig(lastParams())[4]).toBe(4);
+  });
+
+  it('rejects explicit styles for short-form video', async () => {
+    const { api } = makeApi();
+    await expect(
+      api.generateVideo('nb', {
+        videoFormat: VideoFormat.SHORT,
+        videoStyle: VideoStyle.ANIME,
+      }),
+    ).rejects.toThrow(/fixed visual style/);
+    await expect(
+      api.generateVideo('nb', {
+        videoFormat: VideoFormat.SHORT,
+        stylePrompt: 'watercolor',
+      }),
+    ).rejects.toThrow(/fixed visual style/);
   });
 });
 

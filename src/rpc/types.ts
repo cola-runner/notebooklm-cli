@@ -178,7 +178,7 @@ export function sourceStatusToString(code: number): string {
 export const AudioFormat = { DEEP_DIVE: 1, BRIEF: 2, CRITIQUE: 3, DEBATE: 4 } as const;
 export const AudioLength = { SHORT: 1, DEFAULT: 2, LONG: 3 } as const;
 
-export const VideoFormat = { EXPLAINER: 1, BRIEF: 2, CINEMATIC: 3 } as const;
+export const VideoFormat = { EXPLAINER: 1, BRIEF: 2, CINEMATIC: 3, SHORT: 4 } as const;
 // Style codes are the live web-bundle values, not a tidy 1..N sequence — Google
 // assigns them out of order. Corrected against notebooklm-py (de58d62); the old
 // sequential guess sent e.g. ANIME=6, which the backend silently reads as
