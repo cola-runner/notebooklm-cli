@@ -18,7 +18,7 @@ Package manager is **pnpm** (there is a `pnpm-lock.yaml`).
 ```bash
 pnpm dev <command...>          # run the CLI from source via tsx, no build (e.g. pnpm dev list)
 pnpm build                     # tsc -p tsconfig.build.json → dist/ (src only, excludes tests)
-pnpm test                      # vitest run (99 unit tests)
+pnpm test                      # vitest run (174 unit tests)
 pnpm test:watch                # vitest watch mode
 pnpm vitest run tests/unit/encoder.test.ts          # run a single test file
 pnpm vitest run -t 'nestSourceIds'                  # run tests matching a name
@@ -58,7 +58,9 @@ Transport → RPC encode/decode**.
 - **`src/api/`** — one class per feature domain (`notebooks`, `sources`, `chat`, `artifacts`,
   `notes`, `share`, `research`, `user`), each constructed with a `Session` and exposed as a field
   on `NotebookLMClient` (`src/client.ts`). API methods build the nested params, call
-  `session.call('METHOD_NAME', params, { allowNull? })`, and parse the result.
+  `session.call('METHOD_NAME', params, { allowNull? })`, and parse the result. Artifact rows retain
+  their type-specific generation prompt, exposed through `artifacts.getPrompt()`. `user.whoami()`
+  reads tier code and quotas from the single authoritative `GET_USER_SETTINGS` limits block.
 - **`src/cli/`** — `index.ts` wires up Commander; `artifactCommands.ts` registers the
   `generate`/`artifact`/`download` subtrees. `output.ts` defines the agent contract (see below).
 - **`src/auth/`** — `storage_state.json` is Playwright-compatible (same shape as
@@ -66,6 +68,8 @@ Transport → RPC encode/decode**.
   overridable via `--storage` or `NOTEBOOKLM_STORAGE`. Login has three paths: browser auto-capture
   (`loginBrowser.ts`, the only thing needing Playwright — an optional peer dep), paste-a-cURL
   (`loginPaste.ts` / `curlCookies.ts`), and macOS Chrome cookie decrypt (`chromeCookies.ts`).
+  Browser login accepts both `notebooklm.google.com` and the rebranded `notebook.google.com` app
+  destination and waits only for navigation commit because the streaming SPA may never fire load.
 
 ### Three HTTP paths, not one
 

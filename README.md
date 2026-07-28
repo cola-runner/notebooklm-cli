@@ -13,7 +13,7 @@ exit codes you can branch on.
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-3C873A.svg)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6.svg)](tsconfig.json)
-[![Tests](https://img.shields.io/badge/tests-147%20passing-2EA44F.svg)](tests)
+[![Tests](https://img.shields.io/badge/tests-174%20passing-2EA44F.svg)](tests)
 
 </div>
 
@@ -63,21 +63,34 @@ Progress goes to **stderr**, results to **stdout** — pipe one without the othe
 - 🔑 **Keychain-free login** — sign in through your real browser (cookies are read
   *after* you log in; nothing is decrypted off disk) or paste a "Copy as cURL".
   No OS-keychain prompt, so it works for anyone — not just the machine that made
-  the session.
+  the session. Browser login follows both the legacy NotebookLM host and the
+  rebranded Gemini Notebook host.
 - 📚 **Grounded chat** — answers carry real **citations** (source id, cited
   passage, character ranges, relevance score) and support **multi-turn**
   conversations via `ask --conversation-id`.
-- 🎨 **Every studio artifact** — audio, video (incl. cinematic), report
+- 🎨 **Every studio artifact** — audio, video (incl. cinematic and short-form), report
   (briefing / study guide / blog post / custom), quiz, flashcards, infographic,
-  slide deck, data table — **generate *and* download** (and **retry** a failed one).
+  slide deck, data table — **generate *and* download**, inspect the stored
+  generation prompt, and **retry** a failed one.
 - 🏷️ **Organize & steer** — group a notebook's sources into **labels** (manual or
   AI auto-grouping), filter `source list` by label, and get **AI-suggested
   prompts** for what to ask next.
 - 🔬 **Research · notes · sharing** — web/Drive research discovery + import (with
   **cancel**), notes CRUD, and public-link sharing.
 - 🧱 **Solid by construction** — TypeScript strict mode, `undici` transport with
-  network-fault classification + retry, and **147 unit tests** that pin the
+  network-fault classification + retry, and **174 unit tests** that pin the
   position-sensitive wire format against captured fixtures.
+
+---
+
+## 🆕 What's new — v0.1.3 upstream sync
+
+- Browser login recognizes the July 2026 **Gemini Notebook** host
+  (`notebook.google.com`) and no longer waits for the streaming app's `load` event.
+- Generate vertical short-form videos with `generate video --format short`.
+- Read the original prompt behind any studio artifact with `artifact get-prompt`.
+- `whoami` now derives the account tier from the authoritative quota block rather
+  than Google's promotions endpoint.
 
 ---
 
@@ -93,8 +106,8 @@ first, then everyone.
 Two things follow for this CLI:
 
 - **`notebooklm whoami`** tells you which rollout your account is in — your
-  subscription tier (Free / AI Plus / AI Pro / **AI Ultra**) plus notebook/source
-  quotas. Use it to check whether the new agentic features are live for you yet.
+  subscription tier code plus notebook/source quotas. Use it to check whether the
+  new agentic features are live for you yet.
 - The new server-side capabilities (source discovery, code execution, the new
   export formats) ride on internal RPC endpoints we haven't reverse-engineered
   yet. **Status: tracking upstream [notebooklm-py](https://github.com/teng-lin/notebooklm-py).**
@@ -103,7 +116,7 @@ Two things follow for this CLI:
 
 ```bash
 notebooklm whoami --json
-# { "tier": "NOTEBOOKLM_TIER_ULTRA", "tierLabel": "AI Ultra", "notebookLimit": …, "sourceLimit": … }
+# { "tier": "NOTEBOOKLM_TIER_ULTRA", "tierCode": 6, "tierLabel": "Ultra", "notebookLimit": …, "sourceLimit": … }
 ```
 
 ---
@@ -198,8 +211,10 @@ notebooklm research cancel <nb> <taskId>                 # stop an in-flight run
 
 # Studio artifacts — generate & download
 notebooklm generate audio <nb> --format deep-dive --wait
+notebooklm generate video <nb> --format short --wait
 notebooklm generate report <nb> --format study-guide --wait
 notebooklm artifact list <nb>
+notebooklm artifact get-prompt <nb> <artifactId>        # show the original generation prompt
 notebooklm artifact retry <nb> <artifactId>             # re-run a failed artifact
 notebooklm download audio <nb> ./overview.mp4
 notebooklm download slide-deck <nb> ./deck.pdf
@@ -239,9 +254,9 @@ await client.artifacts.waitForCompletion(nb.id, taskId);
 | `sources` — add URL/YouTube/**file** (resumable upload) · list (+ `--label`) · delete · wait | ✅ |
 | `labels` — create · list · **AI auto-grouping** · rename · assign/unassign · delete | ✅ |
 | `chat` — ask · **citations** · **multi-turn** · **suggest-prompts** | ✅ |
-| `artifacts` — generate · list · poll · download · delete · rename · export · **retry** | ✅ |
+| `artifacts` — generate (incl. **short video**) · list · **get prompt** · poll · download · delete · rename · export · retry | ✅ |
 | `notes` (CRUD) · `share` (public link) · `research` (web/Drive · **cancel**) | ✅ |
-| `whoami` — subscription tier + account quotas | ✅ |
+| `whoami` — authoritative tier code + account quotas | ✅ |
 | Mind maps · per-user share ACLs · save-answer-as-note | ⏳ planned |
 | 2026-06 agentic update — source discovery · code exec · new exports | ⏳ tracking upstream |
 
