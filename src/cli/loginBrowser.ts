@@ -18,7 +18,7 @@
  * the window we open.
  */
 
-import type { BrowserContext, Cookie } from 'playwright';
+import type { BrowserContext, Cookie, Page } from 'playwright';
 import { findChromiumBrowser } from '../auth/browserLocator.js';
 import { ensureStorageDir, getStoragePath, loginProfileDir } from '../auth/paths.js';
 import { findMissingRequiredCookies } from '../auth/storage.js';
@@ -41,6 +41,28 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** Whether a browser URL is an authenticated NotebookLM/Gemini Notebook destination. */
+export function isNotebookAppUrl(rawUrl: string, baseUrl = getBaseUrl()): boolean {
+  try {
+    const host = new URL(rawUrl).hostname;
+    const baseHost = new URL(baseUrl).hostname;
+    return (
+      host === baseHost || (baseHost === 'notebooklm.google.com' && host === 'notebook.google.com')
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** Open the app without waiting for the streaming SPA's never-settling load event. */
+export async function navigateToNotebookApp(
+  page: Pick<Page, 'goto'>,
+  baseUrl: string,
+): Promise<void> {
+  const url = `${baseUrl.replace(/\/+$/, '')}/`;
+  await page.goto(url, { waitUntil: 'commit' }).catch(() => undefined);
+}
+
 function isGoogleDomain(domain: string): boolean {
   const d = domain.replace(/^\./, '');
   return d === 'google.com' || d.endsWith('.google.com');
@@ -61,12 +83,17 @@ function toStoredCookie(c: Cookie): StoredCookie {
 }
 
 /** Poll the live browser until the required session cookies appear. */
-async function captureSession(context: BrowserContext, deadline: number): Promise<StorageState> {
+async function captureSession(
+  context: BrowserContext,
+  deadline: number,
+  baseUrl: string,
+): Promise<StorageState> {
   let announced = false;
   while (Date.now() < deadline) {
     const cookies = (await context.cookies()).filter((c) => isGoogleDomain(c.domain));
     const state: StorageState = { cookies: cookies.map(toStoredCookie), origins: [] };
-    if (findMissingRequiredCookies(state).length === 0) {
+    const reachedApp = context.pages().some((page) => isNotebookAppUrl(page.url(), baseUrl));
+    if (findMissingRequiredCookies(state).length === 0 && reachedApp) {
       // The post-login redirect dance sets cookies in bursts. Capturing the
       // instant the SID cookie appears can miss the SAPISID/SID variants the
       // RPC needs (observed: a too-early 19-cookie grab was rejected, while the
@@ -131,9 +158,10 @@ export async function runBrowserLogin(opts: BrowserLoginOptions = {}): Promise<v
   const deadline = Date.now() + (opts.timeoutMs ?? 5 * 60 * 1000);
   try {
     const page = context.pages()[0] ?? (await context.newPage());
-    await page.goto(`${getBaseUrl()}/`, { waitUntil: 'domcontentloaded' }).catch(() => undefined);
+    const baseUrl = getBaseUrl();
+    await navigateToNotebookApp(page, baseUrl);
 
-    const state = await captureSession(context, deadline);
+    const state = await captureSession(context, deadline, baseUrl);
     console.error(`✓ Captured ${state.cookies.length} cookies from ${choice.name}.`);
 
     const saveOpts: VerifyAndSaveOptions = {};
