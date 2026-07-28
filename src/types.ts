@@ -140,13 +140,14 @@ export interface AskResult {
 
 /**
  * The authenticated user's subscription tier and account limits, as reported
- * by GET_USER_TIER (+ GET_USER_SETTINGS). Used by `notebooklm whoami` so a
- * caller can tell which feature rollout their account is in.
+ * by the authoritative limits block in GET_USER_SETTINGS.
  */
 export interface UserAccount {
-  /** Raw tier constant, e.g. "NOTEBOOKLM_TIER_ULTRA" (undefined if not found). */
+  /** Backward-compatible symbolic tier derived from `tierCode`. */
   tier?: string;
-  /** Friendly label: "Free" | "AI Plus" | "AI Pro" | "AI Ultra" | "Unknown". */
+  /** Raw positive integer from GET_USER_SETTINGS limits[4]. */
+  tierCode?: number;
+  /** Friendly label: "Free" | "Plus" | "Pro" | "Ultra" | "Expanded" | "Unknown". */
   tierLabel: string;
   /** Max notebooks for this account (from GET_USER_SETTINGS), when available. */
   notebookLimit?: number;

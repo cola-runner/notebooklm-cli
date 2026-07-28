@@ -1,65 +1,92 @@
 import { describe, expect, it } from 'vitest';
-import { parseUserSettings, parseUserTier, tierLabelFor } from '../../src/api/user.js';
+import {
+  UserAPI,
+  parseUserSettings,
+  tierConstantForCode,
+  tierLabelForCode,
+} from '../../src/api/user.js';
+import type { Session } from '../../src/session/session.js';
 
-describe('tierLabelFor', () => {
-  it('maps known tier constants to friendly labels', () => {
-    expect(tierLabelFor('NOTEBOOKLM_TIER_STANDARD')).toBe('Free');
-    expect(tierLabelFor('NOTEBOOKLM_TIER_PLUS')).toBe('AI Plus');
-    expect(tierLabelFor('NOTEBOOKLM_TIER_PRO')).toBe('AI Pro');
-    expect(tierLabelFor('NOTEBOOKLM_TIER_ULTRA')).toBe('AI Ultra');
+describe('tierLabelForCode', () => {
+  it.each([
+    [1, 'Free'],
+    [2, 'Pro'],
+    [4, 'Plus'],
+    [3, 'Ultra'],
+    [6, 'Ultra'],
+    [5, 'Expanded'],
+  ])('maps tier code %s to %s', (code, label) => {
+    expect(tierLabelForCode(code)).toBe(label);
   });
 
-  it('maps the consumer/dasher Pro variants seen in the wild', () => {
-    // Consumer AI Pro reports this instead of plain _PRO (notebooklm-py d9fcc0b).
-    expect(tierLabelFor('NOTEBOOKLM_TIER_PRO_CONSUMER_USER')).toBe('AI Pro');
-    expect(tierLabelFor('NOTEBOOKLM_TIER_PRO_DASHER_END_USER')).toBe('Workspace Pro');
-  });
-
-  it('falls back to the raw value for unknown tiers and "Unknown" for none', () => {
-    expect(tierLabelFor('NOTEBOOKLM_TIER_FUTURE')).toBe('NOTEBOOKLM_TIER_FUTURE');
-    expect(tierLabelFor(undefined)).toBe('Unknown');
+  it('does not invent a label for unknown or absent codes', () => {
+    expect(tierLabelForCode(99)).toBe('Unknown (99)');
+    expect(tierLabelForCode(undefined)).toBe('Unknown');
   });
 });
 
-describe('parseUserTier', () => {
-  it('finds the tier constant regardless of nesting depth', () => {
-    const fixture = [[[['NOTEBOOKLM_TIER_ULTRA', 1, [2]]]]];
-    expect(parseUserTier(fixture)).toEqual({
-      tier: 'NOTEBOOKLM_TIER_ULTRA',
-      tierLabel: 'AI Ultra',
-    });
-  });
-
-  it('finds the tier when wrapped beside unrelated strings', () => {
-    const fixture = [['some-id', ['NOTEBOOKLM_TIER_STANDARD']], 'NOT_A_TIER'];
-    expect(parseUserTier(fixture)).toEqual({
-      tier: 'NOTEBOOKLM_TIER_STANDARD',
-      tierLabel: 'Free',
-    });
-  });
-
-  it('returns Unknown when no tier string is present', () => {
-    expect(parseUserTier([[[]]])).toEqual({ tierLabel: 'Unknown' });
-    expect(parseUserTier(null)).toEqual({ tierLabel: 'Unknown' });
+describe('tierConstantForCode', () => {
+  it('preserves the symbolic tier field for existing consumers', () => {
+    expect(tierConstantForCode(1)).toBe('NOTEBOOKLM_TIER_STANDARD');
+    expect(tierConstantForCode(2)).toBe('NOTEBOOKLM_TIER_PRO');
+    expect(tierConstantForCode(4)).toBe('NOTEBOOKLM_TIER_PLUS');
+    expect(tierConstantForCode(3)).toBe('NOTEBOOKLM_TIER_ULTRA');
+    expect(tierConstantForCode(6)).toBe('NOTEBOOKLM_TIER_ULTRA');
+    expect(tierConstantForCode(5)).toBe('NOTEBOOKLM_TIER_EXPANDED');
+    expect(tierConstantForCode(99)).toBeUndefined();
   });
 });
 
 describe('parseUserSettings', () => {
-  it('extracts notebook/source limits and language from the documented shape', () => {
-    // result[0][1] = limits, result[0][2][4][0] = language (per rpc-reference)
+  it('extracts notebook/source limits, authoritative tier, and language', () => {
     const fixture = [
-      [null, [6, 500, 300, 500000], [true, null, null, true, ['ja']], [[1]], [true, 1, 3, 2]],
+      [null, [6, 500, 300, 500000, 2], [true, null, null, true, ['ja']], [[1]], [true, 1, 3, 2]],
     ];
     expect(parseUserSettings(fixture)).toEqual({
       notebookLimit: 500,
       sourceLimit: 300,
+      tierCode: 2,
       language: 'ja',
     });
+  });
+
+  it('ignores absent, non-positive, boolean, and non-integer tier values', () => {
+    expect(parseUserSettings([[null, [6, 500, 300, 500000]]])).toEqual({
+      notebookLimit: 500,
+      sourceLimit: 300,
+    });
+    expect(parseUserSettings([[null, [6, 500, 300, 500000, 0]]]).tierCode).toBeUndefined();
+    expect(parseUserSettings([[null, [6, 500, 300, 500000, true]]]).tierCode).toBeUndefined();
+    expect(parseUserSettings([[null, [6, 500, 300, 500000, 2.5]]]).tierCode).toBeUndefined();
   });
 
   it('returns an empty object for malformed/empty responses', () => {
     expect(parseUserSettings(null)).toEqual({});
     expect(parseUserSettings([])).toEqual({});
     expect(parseUserSettings([[null, 'not-an-array']])).toEqual({});
+  });
+});
+
+describe('UserAPI.whoami', () => {
+  it('fetches settings once and derives the compatibility tier', async () => {
+    const calls: string[] = [];
+    const session = {
+      call: async (method: string) => {
+        calls.push(method);
+        return [[null, [6, 500, 300, 500000, 2], [true, null, null, true, ['en']]]];
+      },
+    } as unknown as Session;
+
+    const account = await new UserAPI(session).whoami();
+
+    expect(calls).toEqual(['GET_USER_SETTINGS']);
+    expect(account).toEqual({
+      tier: 'NOTEBOOKLM_TIER_PRO',
+      tierCode: 2,
+      tierLabel: 'Pro',
+      notebookLimit: 500,
+      sourceLimit: 300,
+      language: 'en',
+    });
   });
 });

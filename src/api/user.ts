@@ -1,84 +1,63 @@
 /**
  * User account API — subscription tier and account limits.
  *
- * Wires up GET_USER_TIER (ozz5Z) and GET_USER_SETTINGS (ZwVcOc), whose RPC
- * method IDs were already present in `rpc/types.ts` but previously unused. The
- * param shapes follow notebooklm-py's `docs/rpc-reference.md`. Both calls are
- * read-only and idempotent, and both go through the default `source-path=/`
- * the Session already sets.
- *
- * The tier is the answer to "which feature rollout is my account in?" — the
- * 2026-06 agentic update (Gemini 3.5, chat-driven source discovery, code
- * execution) rolled out to AI Ultra and Workspace business accounts first.
+ * GET_USER_SETTINGS (ZwVcOc) returns the authoritative limits block used by
+ * NotebookLM itself. The tier enum rides at limits[4], beside the notebook and
+ * per-notebook source limits. GET_USER_TIER is a promotions endpoint and is not
+ * reliable for distinguishing free from paid accounts.
  */
 
 import type { Session } from '../session/session.js';
 import type { UserAccount } from '../types.js';
 
-/** Map a raw NOTEBOOKLM_TIER_* constant to a friendly label. */
-const TIER_LABELS: Record<string, string> = {
-  NOTEBOOKLM_TIER_STANDARD: 'Free',
-  NOTEBOOKLM_TIER_PLUS: 'AI Plus',
-  NOTEBOOKLM_TIER_PRO: 'AI Pro',
-  // Consumer AI Pro reports this variant in the wild (live-observed 2026-06-16);
-  // same plan as NOTEBOOKLM_TIER_PRO. (notebooklm-py d9fcc0b)
-  NOTEBOOKLM_TIER_PRO_CONSUMER_USER: 'AI Pro',
-  NOTEBOOKLM_TIER_PRO_DASHER_END_USER: 'Workspace Pro',
-  NOTEBOOKLM_TIER_ULTRA: 'AI Ultra',
+const TIER_LABELS: Record<number, string> = {
+  1: 'Free',
+  2: 'Pro',
+  3: 'Ultra',
+  4: 'Plus',
+  5: 'Expanded',
+  6: 'Ultra',
 };
 
-export function tierLabelFor(tier: string | undefined): string {
-  if (!tier) return 'Unknown';
-  return TIER_LABELS[tier] ?? tier;
+const TIER_CONSTANTS: Record<number, string> = {
+  1: 'NOTEBOOKLM_TIER_STANDARD',
+  2: 'NOTEBOOKLM_TIER_PRO',
+  3: 'NOTEBOOKLM_TIER_ULTRA',
+  4: 'NOTEBOOKLM_TIER_PLUS',
+  5: 'NOTEBOOKLM_TIER_EXPANDED',
+  6: 'NOTEBOOKLM_TIER_ULTRA',
+};
+
+/** Conservative friendly label for an authoritative account-limits tier code. */
+export function tierLabelForCode(tierCode: number | undefined): string {
+  if (tierCode === undefined) return 'Unknown';
+  return TIER_LABELS[tierCode] ?? `Unknown (${tierCode})`;
+}
+
+/** Backward-compatible symbolic tier derived from the authoritative numeric code. */
+export function tierConstantForCode(tierCode: number | undefined): string | undefined {
+  if (tierCode === undefined) return undefined;
+  return TIER_CONSTANTS[tierCode];
 }
 
 export class UserAPI {
   constructor(private readonly session: Session) {}
 
-  /**
-   * Resolve the authenticated user's subscription tier plus, best-effort,
-   * their account limits. A failure fetching settings does not fail the call —
-   * the tier is the headline and settings are supplementary.
-   */
+  /** Resolve the authenticated user's authoritative tier and account limits. */
   async whoami(): Promise<UserAccount> {
-    const tierResult = await this.session.call<unknown>('GET_USER_TIER', tierParams(), {
+    const settingsResult = await this.session.call<unknown>('GET_USER_SETTINGS', settingsParams(), {
       allowNull: true,
     });
-    const account = parseUserTier(tierResult);
-
-    try {
-      const settingsResult = await this.session.call<unknown>(
-        'GET_USER_SETTINGS',
-        settingsParams(),
-        {
-          allowNull: true,
-        },
-      );
-      const settings = parseUserSettings(settingsResult);
-      if (settings.notebookLimit !== undefined) account.notebookLimit = settings.notebookLimit;
-      if (settings.sourceLimit !== undefined) account.sourceLimit = settings.sourceLimit;
-      if (settings.language !== undefined) account.language = settings.language;
-    } catch {
-      // Settings are best-effort; the tier alone is a valid result.
-    }
-
+    const settings = parseUserSettings(settingsResult);
+    const account: UserAccount = { tierLabel: tierLabelForCode(settings.tierCode) };
+    const tier = tierConstantForCode(settings.tierCode);
+    if (tier !== undefined) account.tier = tier;
+    if (settings.tierCode !== undefined) account.tierCode = settings.tierCode;
+    if (settings.notebookLimit !== undefined) account.notebookLimit = settings.notebookLimit;
+    if (settings.sourceLimit !== undefined) account.sourceLimit = settings.sourceLimit;
+    if (settings.language !== undefined) account.language = settings.language;
     return account;
   }
-}
-
-/** Request params for GET_USER_TIER (per notebooklm-py rpc-reference). */
-function tierParams(): unknown[] {
-  return [
-    [
-      [
-        [
-          [null, '1', 627],
-          [null, null, null, null, null, null, null, null, null, [null, null, 2]],
-          1,
-        ],
-      ],
-    ],
-  ];
 }
 
 /** Request params for GET_USER_SETTINGS (per notebooklm-py rpc-reference). */
@@ -86,48 +65,40 @@ function settingsParams(): unknown[] {
   return [null, [1, null, null, null, null, null, null, null, null, null, [1]]];
 }
 
-/**
- * Extract the tier from a GET_USER_TIER response by recursively scanning for
- * the NOTEBOOKLM_TIER_* constant. Position-agnostic (mirrors the UUID scan in
- * chat.ts) so a layout shift in the surrounding envelope does not break it.
- */
-export function parseUserTier(result: unknown): UserAccount {
-  const tier = findTierString(result);
-  return tier ? { tier, tierLabel: tierLabelFor(tier) } : { tierLabel: 'Unknown' };
-}
-
-function findTierString(data: unknown, depth = 8): string | undefined {
-  if (depth < 0 || data == null) return undefined;
-  if (typeof data === 'string') return /^NOTEBOOKLM_TIER_/.test(data) ? data : undefined;
-  if (Array.isArray(data)) {
-    for (const item of data) {
-      const found = findTierString(item, depth - 1);
-      if (found) return found;
-    }
-  }
-  return undefined;
+function positiveInteger(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : undefined;
 }
 
 /**
- * Parse account limits + language from a GET_USER_SETTINGS response.
+ * Parse account limits, authoritative tier, and language from GET_USER_SETTINGS.
  *
- * Shape (per rpc-reference): `result[0][1]` = `[?, notebookLimit, sourceLimit, ?]`,
- * language at `result[0][2][4][0]`. Every slot is read defensively.
+ * Shape: `result[0][1]` is the limits block. Indexes 1/2 are notebook/source
+ * limits and index 4 is the account tier. Language is at `result[0][2][4][0]`.
  */
 export function parseUserSettings(result: unknown): {
   notebookLimit?: number;
   sourceLimit?: number;
+  tierCode?: number;
   language?: string;
 } {
-  const out: { notebookLimit?: number; sourceLimit?: number; language?: string } = {};
+  const out: {
+    notebookLimit?: number;
+    sourceLimit?: number;
+    tierCode?: number;
+    language?: string;
+  } = {};
   if (!Array.isArray(result) || result.length === 0) return out;
   const root = result[0];
   if (!Array.isArray(root)) return out;
 
   const limits = root[1];
   if (Array.isArray(limits)) {
-    if (typeof limits[1] === 'number') out.notebookLimit = limits[1];
-    if (typeof limits[2] === 'number') out.sourceLimit = limits[2];
+    const notebookLimit = positiveInteger(limits[1]);
+    const sourceLimit = positiveInteger(limits[2]);
+    const tierCode = positiveInteger(limits[4]);
+    if (notebookLimit !== undefined) out.notebookLimit = notebookLimit;
+    if (sourceLimit !== undefined) out.sourceLimit = sourceLimit;
+    if (tierCode !== undefined) out.tierCode = tierCode;
   }
 
   const settings = root[2];

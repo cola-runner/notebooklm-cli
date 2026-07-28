@@ -24,6 +24,7 @@ import { runBrowserLogin } from './loginBrowser.js';
 import { runPasteLogin } from './loginPaste.js';
 import { readAllStdin } from './loginShared.js';
 import { EXIT, emit, fail } from './output.js';
+import { userAccountLines } from './userOutput.js';
 
 /** Human renderer for a sharing status. */
 function printShareStatus(s: ShareStatus): void {
@@ -190,19 +191,7 @@ program
       const account = await client.user.whoami();
       await client.save();
       emit(opts, account, (a) => {
-        console.log(`Tier: ${a.tierLabel}${a.tier ? `  (${a.tier})` : ''}`);
-        if (a.notebookLimit !== undefined) console.log(`Notebooks:  up to ${a.notebookLimit}`);
-        if (a.sourceLimit !== undefined) console.log(`Sources/nb: up to ${a.sourceLimit}`);
-        if (a.language) console.log(`Language:   ${a.language}`);
-        if (a.tier === 'NOTEBOOKLM_TIER_ULTRA') {
-          console.log(
-            '\n✓ AI Ultra — eligible for the 2026-06 agentic update (Gemini 3.5,\n  chat-driven source discovery, in-notebook code execution).',
-          );
-        } else if (a.tier) {
-          console.log(
-            '\nℹ The 2026-06 agentic update rolled out to AI Ultra and Workspace business\n  first; your tier may not have it yet.',
-          );
-        }
+        for (const line of userAccountLines(a)) console.log(line);
       });
     } catch (err) {
       fail(opts, err);
