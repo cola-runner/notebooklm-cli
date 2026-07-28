@@ -39,6 +39,8 @@ export interface Artifact {
   artifactType: number;
   /** For type 4: 1=flashcards, 2=quiz. */
   variant?: number;
+  /** Free-text prompt that generated the artifact, when stored by NotebookLM. */
+  generationPrompt?: string;
 }
 
 /** Status of an in-flight or finished generation task. task_id === artifact id. */
@@ -70,6 +72,31 @@ const ARTIFACT_TYPE_CODE_MAP: Record<number, ArtifactType> = {
   [ArtifactTypeCode.SLIDE_DECK]: ArtifactType.SLIDE_DECK,
   [ArtifactTypeCode.DATA_TABLE]: ArtifactType.DATA_TABLE,
 };
+
+const PROMPT_PATHS: Record<number, readonly number[]> = {
+  [ArtifactTypeCode.AUDIO]: [6, 1, 0],
+  [ArtifactTypeCode.REPORT]: [7, 1, 5],
+  [ArtifactTypeCode.VIDEO]: [8, 2, 2],
+  [ArtifactTypeCode.QUIZ]: [9, 1, 2],
+  [ArtifactTypeCode.INFOGRAPHIC]: [14, 0, 0],
+  [ArtifactTypeCode.SLIDE_DECK]: [16, 0, 0],
+  [ArtifactTypeCode.DATA_TABLE]: [18, 1, 0],
+};
+
+/** Extract the type-specific free-text prompt from a LIST_ARTIFACTS row. */
+export function extractArtifactGenerationPrompt(
+  data: unknown[],
+  artifactType: number,
+): string | undefined {
+  const path = PROMPT_PATHS[artifactType];
+  if (!path) return undefined;
+  let value: unknown = data;
+  for (const index of path) {
+    if (!Array.isArray(value) || index >= value.length) return undefined;
+    value = value[index];
+  }
+  return typeof value === 'string' ? value : undefined;
+}
 
 /** Map an internal (typeCode, variant) pair to a user-facing ArtifactType. */
 export function mapArtifactKind(artifactType: number, variant: number | undefined): ArtifactType {
@@ -186,6 +213,7 @@ export function parseArtifact(data: unknown): Artifact | null {
   }
 
   const url = extractArtifactUrl(data, artifactType);
+  const generationPrompt = extractArtifactGenerationPrompt(data, artifactType);
 
   const artifact: Artifact = {
     id,
@@ -197,6 +225,7 @@ export function parseArtifact(data: unknown): Artifact | null {
   if (createdAt !== undefined) artifact.createdAt = createdAt;
   if (url !== undefined) artifact.url = url;
   if (variant !== undefined) artifact.variant = variant;
+  if (generationPrompt !== undefined) artifact.generationPrompt = generationPrompt;
   return artifact;
 }
 

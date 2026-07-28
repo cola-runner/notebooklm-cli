@@ -506,6 +506,15 @@ export class ArtifactsAPI {
     return artifacts.find((a) => a.id === artifactId);
   }
 
+  /** Return the free-text prompt that generated an artifact, when one was stored. */
+  async getPrompt(notebookId: string, artifactId: string): Promise<string | null> {
+    const artifact = await this.get(notebookId, artifactId);
+    if (!artifact) {
+      throw new ArtifactNotFoundError(`artifact not found: ${artifactId}`);
+    }
+    return artifact.generationPrompt ?? null;
+  }
+
   // ===========================================================================
   // Polling
   // ===========================================================================

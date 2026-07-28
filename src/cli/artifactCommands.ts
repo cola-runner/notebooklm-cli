@@ -275,6 +275,30 @@ export function registerArtifactCommands(program: Command): void {
     });
 
   artifact
+    .command('get-prompt <notebookId> <artifactId>')
+    .description('Show the generation prompt behind an artifact')
+    .option('--storage <path>', 'Override storage_state.json path')
+    .option('--json', 'Output as JSON', false)
+    .action(
+      async (notebookId: string, artifactId: string, opts: { storage?: string; json: boolean }) => {
+        try {
+          const client = await openClient(opts.storage);
+          const prompt = await client.artifacts.getPrompt(notebookId, artifactId);
+          await client.save();
+          emit(opts, { notebookId, id: artifactId, prompt }, (result) => {
+            if (result.prompt === null) {
+              console.log('This artifact has no stored prompt.');
+              return;
+            }
+            console.log(result.prompt);
+          });
+        } catch (err) {
+          fail(opts, err);
+        }
+      },
+    );
+
+  artifact
     .command('delete <notebookId> <artifactId>')
     .description('Delete an artifact')
     .option('--storage <path>', 'Override storage_state.json path')

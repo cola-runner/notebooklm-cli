@@ -34,4 +34,15 @@ describe('artifact command registration', () => {
     );
     expect(() => parseVideoCliOptions({ style: 'oil-paint' })).toThrow(/Unknown video style/);
   });
+
+  it('exposes the artifact get-prompt command', () => {
+    const program = new Command();
+    registerArtifactCommands(program);
+    const artifact = program.commands.find((command) => command.name() === 'artifact');
+    const getPrompt = artifact?.commands.find((command) => command.name() === 'get-prompt');
+
+    expect(getPrompt?.helpInformation()).toContain(
+      'get-prompt [options] <notebookId> <artifactId>',
+    );
+  });
 });

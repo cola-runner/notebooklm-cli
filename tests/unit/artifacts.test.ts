@@ -82,6 +82,37 @@ describe('parseArtifact', () => {
     expect(parseArtifact([])).toBeNull();
     expect(parseArtifact('nope')).toBeNull();
   });
+
+  const promptCases: Array<[number, Record<number, unknown>, string]> = [
+    [ArtifactTypeCode.AUDIO, { 6: [null, ['audio prompt']] }, 'audio prompt'],
+    [
+      ArtifactTypeCode.REPORT,
+      { 7: [null, [null, null, null, null, null, 'report prompt']] },
+      'report prompt',
+    ],
+    [ArtifactTypeCode.VIDEO, { 8: [null, null, [null, null, 'video prompt']] }, 'video prompt'],
+    [ArtifactTypeCode.QUIZ, { 9: [null, [2, null, 'quiz prompt']] }, 'quiz prompt'],
+    [ArtifactTypeCode.INFOGRAPHIC, { 14: [['infographic prompt']] }, 'infographic prompt'],
+    [ArtifactTypeCode.SLIDE_DECK, { 16: [['slides prompt']] }, 'slides prompt'],
+    [ArtifactTypeCode.DATA_TABLE, { 18: [null, ['table prompt']] }, 'table prompt'],
+  ];
+
+  it.each(promptCases)(
+    'extracts the generation prompt for artifact type %s',
+    (artifactType, slots, expected) => {
+      const artifact = parseArtifact(row({ 0: 'a', 2: artifactType, ...slots }));
+      expect(artifact?.generationPrompt).toBe(expected);
+    },
+  );
+
+  it('leaves the prompt absent when the slot is missing or non-string', () => {
+    expect(
+      parseArtifact(row({ 0: 'a', 2: ArtifactTypeCode.AUDIO }))?.generationPrompt,
+    ).toBeUndefined();
+    expect(
+      parseArtifact(row({ 0: 'a', 2: ArtifactTypeCode.AUDIO, 6: [null, [42]] }))?.generationPrompt,
+    ).toBeUndefined();
+  });
 });
 
 describe('parseMindMapArtifact', () => {
