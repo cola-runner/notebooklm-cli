@@ -18,7 +18,7 @@ Package manager is **pnpm** (there is a `pnpm-lock.yaml`).
 ```bash
 pnpm dev <command...>          # run the CLI from source via tsx, no build (e.g. pnpm dev list)
 pnpm build                     # tsc -p tsconfig.build.json → dist/ (src only, excludes tests)
-pnpm test                      # vitest run (174 unit tests)
+pnpm test                      # vitest run (175 unit tests)
 pnpm test:watch                # vitest watch mode
 pnpm vitest run tests/unit/encoder.test.ts          # run a single test file
 pnpm vitest run -t 'nestSourceIds'                  # run tests matching a name

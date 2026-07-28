@@ -13,7 +13,7 @@ exit codes you can branch on.
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-3C873A.svg)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6.svg)](tsconfig.json)
-[![Tests](https://img.shields.io/badge/tests-174%20passing-2EA44F.svg)](tests)
+[![Tests](https://img.shields.io/badge/tests-175%20passing-2EA44F.svg)](tests)
 
 </div>
 
@@ -78,7 +78,7 @@ Progress goes to **stderr**, results to **stdout** — pipe one without the othe
 - 🔬 **Research · notes · sharing** — web/Drive research discovery + import (with
   **cancel**), notes CRUD, and public-link sharing.
 - 🧱 **Solid by construction** — TypeScript strict mode, `undici` transport with
-  network-fault classification + retry, and **174 unit tests** that pin the
+  network-fault classification + retry, and **175 unit tests** that pin the
   position-sensitive wire format against captured fixtures.
 
 ---

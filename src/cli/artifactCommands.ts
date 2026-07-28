@@ -195,13 +195,17 @@ export function registerArtifactCommands(program: Command): void {
     )
     .option('--style-prompt <text>', 'Custom visual style prompt (requires --style custom)')
     .action(async (notebookId: string, opts: CommonGenOpts & VideoCliOptions) => {
-      const videoOpts = parseVideoCliOptions(opts);
-      await runGeneration(opts, notebookId, (client) =>
-        client.artifacts.generateVideo(notebookId, {
-          ...baseOpts(opts),
-          ...videoOpts,
-        }),
-      );
+      try {
+        const videoOpts = parseVideoCliOptions(opts);
+        await runGeneration(opts, notebookId, (client) =>
+          client.artifacts.generateVideo(notebookId, {
+            ...baseOpts(opts),
+            ...videoOpts,
+          }),
+        );
+      } catch (err) {
+        fail(opts, err);
+      }
     });
 
   // ---- generate report ----

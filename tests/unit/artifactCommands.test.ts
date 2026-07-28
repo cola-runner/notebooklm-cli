@@ -1,3 +1,5 @@
+import { spawnSync } from 'node:child_process';
+import { resolve } from 'node:path';
 import { Command } from 'commander';
 import { describe, expect, it } from 'vitest';
 import { parseVideoCliOptions, registerArtifactCommands } from '../../src/cli/artifactCommands.js';
@@ -44,5 +46,24 @@ describe('artifact command registration', () => {
     expect(getPrompt?.helpInformation()).toContain(
       'get-prompt [options] <notebookId> <artifactId>',
     );
+  });
+
+  it('emits a JSON error for an invalid video option before opening a client', () => {
+    const tsxCli = resolve('node_modules/tsx/dist/cli.mjs');
+    const cli = resolve('src/cli/index.ts');
+    const result = spawnSync(
+      process.execPath,
+      [tsxCli, cli, 'generate', 'video', 'nb', '--format', 'feature-length', '--json'],
+      { encoding: 'utf8' },
+    );
+
+    expect(result.status).toBe(7);
+    expect(JSON.parse(result.stdout)).toEqual({
+      error: {
+        code: 'RPC',
+        message: 'Unknown video format: feature-length',
+      },
+    });
+    expect(result.stderr).not.toContain('RPC error');
   });
 });
