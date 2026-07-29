@@ -60,8 +60,8 @@ const program = new Command();
 const packageJson = createRequire(import.meta.url)('../../package.json') as { version: string };
 
 program
-  .name('notebooklm')
-  .description('Unofficial NotebookLM CLI for Node.js')
+  .name('gemini-notebook')
+  .description('Unofficial Gemini Notebook CLI for Node.js')
   .version(packageJson.version);
 
 program

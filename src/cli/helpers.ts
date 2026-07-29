@@ -2,7 +2,7 @@
  * Shared CLI helpers — client construction and error rendering.
  */
 
-import { NotebookLMClient } from '../client.js';
+import { GeminiNotebookClient } from '../client.js';
 import { fail } from './output.js';
 
 /**
@@ -14,13 +14,13 @@ import { fail } from './output.js';
  * session and triggers homepage redirect loops. Imported cookies stay valid
  * long enough for interactive CLI use without per-call rotation.
  */
-export async function openClient(storage: string | undefined): Promise<NotebookLMClient> {
-  const opts: Parameters<typeof NotebookLMClient.fromStorage>[0] = {
+export async function openClient(storage: string | undefined): Promise<GeminiNotebookClient> {
+  const opts: Parameters<typeof GeminiNotebookClient.fromStorage>[0] = {
     disableKeepalive: true,
     readOnlyStorage: true,
   };
   if (storage) opts.storagePath = storage;
-  return NotebookLMClient.fromStorage(opts);
+  return GeminiNotebookClient.fromStorage(opts);
 }
 
 /** Print a human-friendly error and exit with a class-specific code. */

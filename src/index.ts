@@ -2,7 +2,7 @@
  * Public package entry — re-exports the client, types, and error classes.
  */
 
-export { NotebookLMClient, type ClientOptions } from './client.js';
+export { GeminiNotebookClient, type ClientOptions } from './client.js';
 export { NotebooksAPI } from './api/notebooks.js';
 export { LabelsAPI } from './api/labels.js';
 export { UserAPI } from './api/user.js';

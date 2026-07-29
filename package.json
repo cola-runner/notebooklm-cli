@@ -1,11 +1,19 @@
 {
-  "name": "@cola_runner/notebooklm-cli",
-  "version": "0.1.4",
-  "description": "Agent-first unofficial NotebookLM client for Node.js — JSON CLI, citations, multi-turn chat, all studio artifacts, research & notes",
-  "keywords": ["notebooklm", "google-notebooklm", "cli", "agent", "llm", "typescript", "unofficial"],
+  "name": "@cola_runner/gemini-notebook-cli",
+  "version": "0.2.0",
+  "description": "Agent-first unofficial Gemini Notebook client for Node.js — JSON CLI, citations, multi-turn chat, all studio artifacts, research & notes",
+  "keywords": [
+    "gemini-notebook",
+    "google-gemini",
+    "cli",
+    "agent",
+    "llm",
+    "typescript",
+    "unofficial"
+  ],
   "type": "module",
   "bin": {
-    "notebooklm": "./dist/cli/index.js"
+    "gemini-notebook": "./dist/cli/index.js"
   },
   "exports": {
     ".": {
@@ -48,6 +56,10 @@
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cola-runner/gemini-notebook-cli.git"
   },
   "license": "MIT"
 }

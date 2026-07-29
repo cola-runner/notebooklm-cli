@@ -6,7 +6,7 @@
 import { getStoragePath } from '../auth/paths.js';
 import { saveStorageState } from '../auth/storage.js';
 import type { StorageState } from '../auth/types.js';
-import { NotebookLMClient } from '../client.js';
+import { GeminiNotebookClient } from '../client.js';
 import { AuthError } from '../rpc/errors.js';
 
 export interface VerifyAndSaveOptions {
@@ -50,7 +50,7 @@ export async function verifyAndSave(
 
   if (opts.verify === false) return;
 
-  const client = NotebookLMClient.fromState(state, {
+  const client = GeminiNotebookClient.fromState(state, {
     disableKeepalive: true,
     readOnlyStorage: true,
   });

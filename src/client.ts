@@ -1,10 +1,10 @@
 /**
- * Main NotebookLMClient — entry point for all API operations.
+ * Main GeminiNotebookClient — entry point for all API operations.
  *
- * Mirrors `NotebookLMClient` from `notebooklm-py`:
+ * Mirrors the main client from `notebooklm-py`:
  *
  * ```ts
- * const client = await NotebookLMClient.fromStorage();
+ * const client = await GeminiNotebookClient.fromStorage();
  * const notebooks = await client.notebooks.list();
  * ```
  */
@@ -38,7 +38,7 @@ export interface ClientOptions {
   readOnlyStorage?: boolean;
 }
 
-export class NotebookLMClient {
+export class GeminiNotebookClient {
   readonly session: Session;
   readonly notebooks: NotebooksAPI;
   readonly sources: SourcesAPI;
@@ -70,7 +70,7 @@ export class NotebookLMClient {
    *
    * @throws {AuthError} when no storage_state.json exists at the resolved path.
    */
-  static async fromStorage(opts: ClientOptions = {}): Promise<NotebookLMClient> {
+  static async fromStorage(opts: ClientOptions = {}): Promise<GeminiNotebookClient> {
     configureProxyFromEnv();
     const storagePath = opts.storagePath ?? getStoragePath();
     const state = await loadStorageState(storagePath);
@@ -79,7 +79,7 @@ export class NotebookLMClient {
     }
     const sessionOpts: ConstructorParameters<typeof Session>[0] = { storagePath, state };
     if (opts.disableKeepalive !== undefined) sessionOpts.disableKeepalive = opts.disableKeepalive;
-    return new NotebookLMClient(new Session(sessionOpts), opts.readOnlyStorage ?? false);
+    return new GeminiNotebookClient(new Session(sessionOpts), opts.readOnlyStorage ?? false);
   }
 
   /**
@@ -89,12 +89,12 @@ export class NotebookLMClient {
    * API before writing them to disk. Defaults to read-only so the probe never
    * mutates the candidate cookie set.
    */
-  static fromState(state: StorageState, opts: ClientOptions = {}): NotebookLMClient {
+  static fromState(state: StorageState, opts: ClientOptions = {}): GeminiNotebookClient {
     configureProxyFromEnv();
     const storagePath = opts.storagePath ?? getStoragePath();
     const sessionOpts: ConstructorParameters<typeof Session>[0] = { storagePath, state };
     if (opts.disableKeepalive !== undefined) sessionOpts.disableKeepalive = opts.disableKeepalive;
-    return new NotebookLMClient(new Session(sessionOpts), opts.readOnlyStorage ?? true);
+    return new GeminiNotebookClient(new Session(sessionOpts), opts.readOnlyStorage ?? true);
   }
 
   /** Persist current cookie state to disk (no-op when `readOnlyStorage`). */
