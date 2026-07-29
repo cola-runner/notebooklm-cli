@@ -6,7 +6,7 @@
 
 export const DEFAULT_BASE_URL = 'https://notebooklm.google.com';
 
-const ENV_VAR = 'NOTEBOOKLM_BASE_URL';
+const ENV_VAR = 'GEMINI_NOTEBOOK_BASE_URL';
 
 /**
  * Hosts allowed for the base URL. Override gating uses this set as a defense
@@ -38,12 +38,12 @@ export function getBaseHost(): string {
 }
 
 /**
- * Preferred interface language. Reads `NOTEBOOKLM_HL`; unset/blank falls back
+ * Preferred interface language. Reads `GEMINI_NOTEBOOK_HL`; unset/blank falls back
  * to "en". Threaded into the default `language` argument of artifact
  * generation. Mirrors py `_env.get_default_language`.
  */
 export function getDefaultLanguage(): string {
-  const raw = process.env['NOTEBOOKLM_HL'];
+  const raw = process.env['GEMINI_NOTEBOOK_HL'];
   if (!raw) return 'en';
   const trimmed = raw.trim();
   return trimmed || 'en';

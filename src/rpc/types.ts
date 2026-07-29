@@ -1,11 +1,11 @@
 /**
- * RPC method IDs and enums for the NotebookLM batchexecute API.
+ * RPC method IDs and enums for the Gemini Notebook batchexecute API.
  *
  * **Source of truth**: ported verbatim from
  * `notebooklm-py/src/notebooklm/rpc/types.py`. These obfuscated method IDs were
  * reverse-engineered from network traffic and Google changes them without
  * notice — keep this file in sync with the upstream Python project, or use
- * the `NOTEBOOKLM_RPC_OVERRIDES` env var (see `overrides.ts`) as an escape
+ * the `GEMINI_NOTEBOOK_RPC_OVERRIDES` env var (see `overrides.ts`) as an escape
  * hatch.
  */
 
@@ -32,7 +32,7 @@ export function getUploadUrl(): string {
  * Obfuscated method identifiers used by the batchexecute API.
  *
  * Reverse-engineered from network traffic analysis. Google can change these
- * at any time; the `NOTEBOOKLM_RPC_OVERRIDES` env var lets users patch values
+ * at any time; the `GEMINI_NOTEBOOK_RPC_OVERRIDES` env var lets users patch values
  * without waiting for a release.
  */
 export const RPCMethod = {

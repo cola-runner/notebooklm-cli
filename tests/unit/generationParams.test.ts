@@ -5,7 +5,7 @@
  * API: a config placed one slot too far made CREATE_ARTIFACT return no
  * artifact_id (slide-deck, data-table), and an all-null infographic config was
  * rejected outright. The numbers below are the positions notebooklm-py uses and
- * that were verified end-to-end against NotebookLM.
+ * that were verified end-to-end against Gemini Notebook.
  */
 
 import { describe, expect, it } from 'vitest';

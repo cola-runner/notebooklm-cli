@@ -23,7 +23,7 @@ export const ArtifactType = {
 } as const;
 export type ArtifactType = (typeof ArtifactType)[keyof typeof ArtifactType];
 
-/** A NotebookLM studio artifact (audio, video, report, quiz, …). */
+/** A Gemini Notebook studio artifact (audio, video, report, quiz, …). */
 export interface Artifact {
   id: string;
   title: string;
@@ -39,7 +39,7 @@ export interface Artifact {
   artifactType: number;
   /** For type 4: 1=flashcards, 2=quiz. */
   variant?: number;
-  /** Free-text prompt that generated the artifact, when stored by NotebookLM. */
+  /** Free-text prompt that generated the artifact, when stored by Gemini Notebook. */
   generationPrompt?: string;
 }
 

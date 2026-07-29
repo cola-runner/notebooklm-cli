@@ -1,5 +1,5 @@
 /**
- * Artifacts API — generate, list, poll, download, and manage NotebookLM
+ * Artifacts API — generate, list, poll, download, and manage Gemini Notebook
  * studio content (audio overviews, videos, reports, quizzes, flashcards,
  * infographics, slide decks, data tables).
  *

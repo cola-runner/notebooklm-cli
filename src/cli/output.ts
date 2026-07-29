@@ -100,7 +100,7 @@ export function fail(opts: JsonFlag, err: unknown): never {
     process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
   } else if (info.code === 'AUTH') {
     process.stderr.write(`\n${info.message}\n`);
-    process.stderr.write("Hint: run 'notebooklm login' to refresh your session.\n");
+    process.stderr.write("Hint: run 'gemini-notebook login' to refresh your session.\n");
   } else if (info.code === 'RPC') {
     process.stderr.write(`\nRPC error: ${info.message}\n`);
     const d = info.details ?? {};

@@ -1,7 +1,7 @@
 /**
  * HTML/WIZ field token extraction (CSRF, session ID).
  *
- * NotebookLM (and other Google products) embed a JavaScript object literal
+ * Gemini Notebook (and other Google products) embed a JavaScript object literal
  * named `WIZ_global_data` in the page chrome. Tokens like `SNlM0e` (CSRF) and
  * `FdrFJe` (session ID) live inside that object. This module is the single
  * place that knows how to parse the embedding.
@@ -59,7 +59,7 @@ export interface ExtractOptions {
 }
 
 /**
- * Extract a `WIZ_global_data[key]` value from a NotebookLM HTML response.
+ * Extract a `WIZ_global_data[key]` value from a Gemini Notebook HTML response.
  *
  * Empty values pass through verbatim — some Google endpoints legitimately
  * emit empty tokens for unauthenticated probes; callers decide what's
@@ -86,7 +86,7 @@ export function extractCsrfFromHtml(html: string, finalUrl = ''): string {
   if (token !== null) return token;
   if (looksLikeAuthRedirect(finalUrl) || looksLikeAuthRedirect(html)) {
     throw new AuthError(
-      "Authentication expired or invalid. Run 'notebooklm login' to re-authenticate.",
+      "Authentication expired or invalid. Run 'gemini-notebook login' to re-authenticate.",
     );
   }
   throw new AuthError(
@@ -100,7 +100,7 @@ export function extractSessionIdFromHtml(html: string, finalUrl = ''): string {
   if (sid !== null) return sid;
   if (looksLikeAuthRedirect(finalUrl) || looksLikeAuthRedirect(html)) {
     throw new AuthError(
-      "Authentication expired or invalid. Run 'notebooklm login' to re-authenticate.",
+      "Authentication expired or invalid. Run 'gemini-notebook login' to re-authenticate.",
     );
   }
   throw new AuthError(

@@ -2,16 +2,16 @@
  * Runtime RPC ID override policy.
  *
  * Ported from `notebooklm-py/src/notebooklm/rpc/overrides.py`. The
- * `NOTEBOOKLM_RPC_OVERRIDES` env var lets users patch RPC method IDs without
+ * `GEMINI_NOTEBOOK_RPC_OVERRIDES` env var lets users patch RPC method IDs without
  * waiting for a library release when Google changes them.
  *
- * Example: `NOTEBOOKLM_RPC_OVERRIDES='{"LIST_NOTEBOOKS":"newId123"}'`
+ * Example: `GEMINI_NOTEBOOK_RPC_OVERRIDES='{"LIST_NOTEBOOKS":"newId123"}'`
  */
 
 import { ALLOWED_BASE_HOSTS, getBaseHost } from '../env.js';
 import { RPCMethod, type RPCMethodName } from './types.js';
 
-export const RPC_OVERRIDES_ENV_VAR = 'NOTEBOOKLM_RPC_OVERRIDES';
+export const RPC_OVERRIDES_ENV_VAR = 'GEMINI_NOTEBOOK_RPC_OVERRIDES';
 
 const validMethodNames = new Set<string>(Object.keys(RPCMethod));
 const loggedOverrideHashes = new Set<string>();
@@ -19,12 +19,12 @@ const parseCache = new Map<string, Map<string, string>>();
 
 function warn(msg: string): void {
   // eslint-disable-next-line no-console
-  console.warn(`[notebooklm-cli] ${msg}`);
+  console.warn(`[gemini-notebook-cli] ${msg}`);
 }
 
 function info(msg: string): void {
   // eslint-disable-next-line no-console
-  console.info(`[notebooklm-cli] ${msg}`);
+  console.info(`[gemini-notebook-cli] ${msg}`);
 }
 
 function parseOverrides(raw: string | undefined): Map<string, string> {

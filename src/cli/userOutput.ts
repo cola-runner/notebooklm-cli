@@ -1,6 +1,6 @@
 import type { UserAccount } from '../types.js';
 
-/** Human-readable lines for `notebooklm whoami`. */
+/** Human-readable lines for `gemini-notebook whoami`. */
 export function userAccountLines(account: UserAccount): string[] {
   const tierDetails: string[] = [];
   if (account.tierCode !== undefined) tierDetails.push(`code=${account.tierCode}`);

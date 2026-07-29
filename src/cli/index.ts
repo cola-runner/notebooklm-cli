@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * notebooklm-cli entry point.
+ * gemini-notebook-cli entry point.
  *
  * Commands:
  *   login           Open a browser, sign in, auto-capture the session (no keychain)
@@ -52,8 +52,8 @@ function printResearch(r: ResearchPollResult): void {
 
 // Honor http(s)_proxy env vars (undici ignores them by default).
 const activeProxy = configureProxyFromEnv();
-if (activeProxy && process.env['NOTEBOOKLM_DEBUG'] === '1') {
-  console.error(`[notebooklm-cli] routing requests through proxy ${activeProxy}`);
+if (activeProxy && process.env['GEMINI_NOTEBOOK_DEBUG'] === '1') {
+  console.error(`[gemini-notebook-cli] routing requests through proxy ${activeProxy}`);
 }
 
 const program = new Command();
@@ -84,7 +84,7 @@ program
     }) => {
       try {
         // Paste mode when requested explicitly (--paste/--cookies/--curl-file),
-        // or when cookies are actually piped in (e.g. `pbpaste | notebooklm
+        // or when cookies are actually piped in (e.g. `pbpaste | gemini-notebook
         // login`). A non-TTY stdin alone is NOT enough — under nohup/CI it is
         // empty, and we'd rather open a browser than fail on no input. So peek
         // the pipe and only switch to paste when it carries data.
@@ -139,10 +139,10 @@ program
         console.log(`Imported ${state.cookies.length} google.com cookies → ${path}`);
         if (missing.length > 0) {
           console.error(`⚠ Missing required auth cookies (need one of: ${missing.join(', ')}).`);
-          console.error('  Make sure you are signed into NotebookLM in that Chrome profile,');
+          console.error('  Make sure you are signed into Gemini Notebook in that Chrome profile,');
           console.error('  or try a different --profile (e.g. "Profile 1").');
         } else {
-          console.log('✓ Required auth cookies present. Try: notebooklm list');
+          console.log('✓ Required auth cookies present. Try: gemini-notebook list');
         }
       });
       if (missing.length > 0) process.exit(EXIT.AUTH);
@@ -166,7 +166,9 @@ program
         cookieCount: 0,
         missing: [] as string[],
       };
-      emit(opts, result, () => console.log(`No storage state at ${path}. Run 'notebooklm login'.`));
+      emit(opts, result, () =>
+        console.log(`No storage state at ${path}. Run 'gemini-notebook login'.`),
+      );
       process.exit(EXIT.AUTH);
     }
     const missing = findMissingRequiredCookies(state);

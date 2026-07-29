@@ -26,7 +26,7 @@ import { AuthError } from './rpc/errors.js';
 import { Session } from './session/session.js';
 
 export interface ClientOptions {
-  /** Path to storage_state.json — defaults to `~/.config/notebooklm-cli/storage_state.json`. */
+  /** Path to storage_state.json — defaults to `~/.config/gemini-notebook-cli/storage_state.json`. */
   storagePath?: string;
   /** Disable the keepalive RotateCookies poke. */
   disableKeepalive?: boolean;
@@ -75,7 +75,9 @@ export class GeminiNotebookClient {
     const storagePath = opts.storagePath ?? getStoragePath();
     const state = await loadStorageState(storagePath);
     if (!state) {
-      throw new AuthError(`No storage_state.json at ${storagePath}. Run 'notebooklm login' first.`);
+      throw new AuthError(
+        `No storage_state.json at ${storagePath}. Run 'gemini-notebook login' first.`,
+      );
     }
     const sessionOpts: ConstructorParameters<typeof Session>[0] = { storagePath, state };
     if (opts.disableKeepalive !== undefined) sessionOpts.disableKeepalive = opts.disableKeepalive;

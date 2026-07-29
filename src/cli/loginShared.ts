@@ -60,6 +60,8 @@ export async function verifyAndSave(
   } catch (err) {
     const reason = err instanceof AuthError ? 'session was rejected' : (err as Error).message;
     console.error(`⚠ Saved, but could not verify (${reason}).`);
-    console.error('  If commands fail, re-run `notebooklm login` or check your proxy settings.');
+    console.error(
+      '  If commands fail, re-run `gemini-notebook login` or check your proxy settings.',
+    );
   }
 }

@@ -2,7 +2,7 @@
  * User account API — subscription tier and account limits.
  *
  * GET_USER_SETTINGS (ZwVcOc) returns the authoritative limits block used by
- * NotebookLM itself. The tier enum rides at limits[4], beside the notebook and
+ * Gemini Notebook itself. The tier enum rides at limits[4], beside the notebook and
  * per-notebook source limits. GET_USER_TIER is a promotions endpoint and is not
  * reliable for distinguishing free from paid accounts.
  */
@@ -20,12 +20,12 @@ const TIER_LABELS: Record<number, string> = {
 };
 
 const TIER_CONSTANTS: Record<number, string> = {
-  1: 'NOTEBOOKLM_TIER_STANDARD',
-  2: 'NOTEBOOKLM_TIER_PRO',
-  3: 'NOTEBOOKLM_TIER_ULTRA',
-  4: 'NOTEBOOKLM_TIER_PLUS',
-  5: 'NOTEBOOKLM_TIER_EXPANDED',
-  6: 'NOTEBOOKLM_TIER_ULTRA',
+  1: 'GEMINI_NOTEBOOK_TIER_STANDARD',
+  2: 'GEMINI_NOTEBOOK_TIER_PRO',
+  3: 'GEMINI_NOTEBOOK_TIER_ULTRA',
+  4: 'GEMINI_NOTEBOOK_TIER_PLUS',
+  5: 'GEMINI_NOTEBOOK_TIER_EXPANDED',
+  6: 'GEMINI_NOTEBOOK_TIER_ULTRA',
 };
 
 /** Conservative friendly label for an authoritative account-limits tier code. */
@@ -34,7 +34,7 @@ export function tierLabelForCode(tierCode: number | undefined): string {
   return TIER_LABELS[tierCode] ?? `Unknown (${tierCode})`;
 }
 
-/** Backward-compatible symbolic tier derived from the authoritative numeric code. */
+/** Symbolic tier derived from the authoritative numeric code. */
 export function tierConstantForCode(tierCode: number | undefined): string | undefined {
   if (tierCode === undefined) return undefined;
   return TIER_CONSTANTS[tierCode];

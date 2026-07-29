@@ -1,5 +1,5 @@
 /**
- * Decode RPC responses from the NotebookLM batchexecute API.
+ * Decode RPC responses from the Gemini Notebook batchexecute API.
  *
  * Ported from `notebooklm-py/src/notebooklm/rpc/decoder.py`. The response
  * format is:
@@ -64,7 +64,7 @@ const ERROR_CODE_MESSAGES: Record<number, [string, boolean]> = {
     false,
   ],
   [RPCErrorCode.UNAUTHORIZED]: [
-    "Authentication required. Run 'notebooklm login' to re-authenticate.",
+    "Authentication required. Run 'gemini-notebook login' to re-authenticate.",
     false,
   ],
   [RPCErrorCode.FORBIDDEN]: ['Insufficient permissions for this operation.', false],

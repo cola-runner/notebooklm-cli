@@ -27,7 +27,7 @@ export interface PasteLoginOptions {
 }
 
 const INSTRUCTIONS = `
-notebooklm login — paste your browser session
+gemini-notebook login — paste your browser session
 ──────────────────────────────────────────────
   1. Open https://notebooklm.google.com in your normal browser (signed in).
   2. Open DevTools (F12 / Cmd-Opt-I) and switch to the Network tab.
@@ -36,16 +36,16 @@ notebooklm login — paste your browser session
   5. Paste it below, then press Enter and Ctrl-D.
 
 Tip — skip the prompt entirely with your clipboard:
-    pbpaste | notebooklm login                 # macOS
-    xclip -o -sel clip | notebooklm login      # Linux
-    powershell Get-Clipboard | notebooklm login  # Windows
+    pbpaste | gemini-notebook login                 # macOS
+    xclip -o -sel clip | gemini-notebook login      # Linux
+    powershell Get-Clipboard | gemini-notebook login  # Windows
 
 Waiting for pasted cURL / Cookie header …`;
 
 async function readInput(opts: PasteLoginOptions): Promise<string> {
   if (opts.cookies?.trim()) return opts.cookies;
   if (opts.curlFile) return readFile(opts.curlFile, 'utf8');
-  // Piped input (e.g. `pbpaste | notebooklm login`) — read it silently.
+  // Piped input (e.g. `pbpaste | gemini-notebook login`) — read it silently.
   if (!process.stdin.isTTY) return readAllStdin();
   // Interactive: show instructions, then read the pasted block to EOF.
   console.error(INSTRUCTIONS);
@@ -69,7 +69,7 @@ export async function runPasteLogin(opts: PasteLoginOptions = {}): Promise<void>
   if (missing.length > 0) {
     console.error(
       `\n✗ Found ${pairs.length} cookies, but none of the required session cookies (${missing.join(', ')}).
-  Are you signed in to NotebookLM in that browser? Copy the cURL of a request
+  Are you signed in to Gemini Notebook in that browser? Copy the cURL of a request
   to notebooklm.google.com (not accounts.google.com) and try again.`,
     );
     process.exit(1);
@@ -79,5 +79,5 @@ export async function runPasteLogin(opts: PasteLoginOptions = {}): Promise<void>
   if (opts.verify !== undefined) saveOpts.verify = opts.verify;
   if (opts.storagePath) saveOpts.storagePath = opts.storagePath;
   await verifyAndSave(state, saveOpts);
-  console.error('  Try it:  notebooklm list');
+  console.error('  Try it:  gemini-notebook list');
 }

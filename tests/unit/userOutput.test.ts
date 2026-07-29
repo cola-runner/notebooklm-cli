@@ -5,7 +5,7 @@ import type { UserAccount } from '../../src/types.js';
 describe('userAccountLines', () => {
   it('shows the authoritative tier code and account limits', () => {
     const account: UserAccount = {
-      tier: 'NOTEBOOKLM_TIER_PRO',
+      tier: 'GEMINI_NOTEBOOK_TIER_PRO',
       tierCode: 2,
       tierLabel: 'Pro',
       notebookLimit: 500,

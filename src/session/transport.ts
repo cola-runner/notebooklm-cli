@@ -137,7 +137,7 @@ export class Transport {
    * Google domains, rejects HTML/empty bodies, writes atomically.
    */
   async download(url: string, outputPath: string): Promise<string> {
-    const debug = process.env['NOTEBOOKLM_DEBUG'] === '1';
+    const debug = process.env['GEMINI_NOTEBOOK_DEBUG'] === '1';
     const jar = this.buildCookieJar();
     const maxHops = 20;
     let current = url;
@@ -190,7 +190,7 @@ export class Transport {
     if (res.statusCode === 401 || res.statusCode === 403) {
       await res.body.text();
       throw new AuthError(
-        `Authentication required for ${finalHost} — re-import your session ('notebooklm import-chrome').`,
+        `Authentication required for ${finalHost} — re-import your session ('gemini-notebook import-chrome').`,
       );
     }
     if (res.statusCode >= 400) {
@@ -203,7 +203,7 @@ export class Transport {
     if (ct?.includes('text/html')) {
       await res.body.text();
       throw new NetworkError(
-        'Download returned HTML instead of media — auth may have expired. Run "notebooklm import-chrome".',
+        'Download returned HTML instead of media — auth may have expired. Run "gemini-notebook import-chrome".',
       );
     }
 
@@ -246,7 +246,7 @@ export class Transport {
     init: { method: 'GET' | 'POST'; headers: Record<string, string>; body?: string },
     maxHops = 10,
   ): Promise<Awaited<ReturnType<typeof request>>> {
-    const debug = process.env['NOTEBOOKLM_DEBUG'] === '1';
+    const debug = process.env['GEMINI_NOTEBOOK_DEBUG'] === '1';
     let url = initialUrl;
     for (let hop = 0; hop < maxHops; hop++) {
       const res = await request(url, init).catch((err: unknown) => {
@@ -266,7 +266,7 @@ export class Transport {
         url = new URL(location, url).toString();
         // Send cookies scoped to the *hop's* host. A homepage → /login →
         // accounts.google.com/ServiceLogin bounce needs the accounts.google.com
-        // cookies (not notebooklm's) to complete the passive re-auth that mints
+        // cookies (not Gemini Notebook's) to complete the passive re-auth that mints
         // the service OSID; sending the wrong host's cookies loops forever.
         init.headers['Cookie'] = this.cookieHeaderFor(new URL(url).host);
         continue;
@@ -313,7 +313,7 @@ export class Transport {
       // (expired/invalid), not a transport fault. Surface as auth so callers
       // (and agents) know to re-login rather than retry.
       throw new AuthError(
-        `Session rejected fetching homepage (HTTP ${res.statusCode}). Run \`notebooklm login\` to refresh.`,
+        `Session rejected fetching homepage (HTTP ${res.statusCode}). Run \`gemini-notebook login\` to refresh.`,
         { rawResponse: html },
       );
     }

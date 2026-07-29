@@ -26,13 +26,13 @@ describe('tierLabelForCode', () => {
 });
 
 describe('tierConstantForCode', () => {
-  it('preserves the symbolic tier field for existing consumers', () => {
-    expect(tierConstantForCode(1)).toBe('NOTEBOOKLM_TIER_STANDARD');
-    expect(tierConstantForCode(2)).toBe('NOTEBOOKLM_TIER_PRO');
-    expect(tierConstantForCode(4)).toBe('NOTEBOOKLM_TIER_PLUS');
-    expect(tierConstantForCode(3)).toBe('NOTEBOOKLM_TIER_ULTRA');
-    expect(tierConstantForCode(6)).toBe('NOTEBOOKLM_TIER_ULTRA');
-    expect(tierConstantForCode(5)).toBe('NOTEBOOKLM_TIER_EXPANDED');
+  it('maps authoritative codes to Gemini Notebook tier constants', () => {
+    expect(tierConstantForCode(1)).toBe('GEMINI_NOTEBOOK_TIER_STANDARD');
+    expect(tierConstantForCode(2)).toBe('GEMINI_NOTEBOOK_TIER_PRO');
+    expect(tierConstantForCode(4)).toBe('GEMINI_NOTEBOOK_TIER_PLUS');
+    expect(tierConstantForCode(3)).toBe('GEMINI_NOTEBOOK_TIER_ULTRA');
+    expect(tierConstantForCode(6)).toBe('GEMINI_NOTEBOOK_TIER_ULTRA');
+    expect(tierConstantForCode(5)).toBe('GEMINI_NOTEBOOK_TIER_EXPANDED');
     expect(tierConstantForCode(99)).toBeUndefined();
   });
 });
@@ -81,7 +81,7 @@ describe('UserAPI.whoami', () => {
 
     expect(calls).toEqual(['GET_USER_SETTINGS']);
     expect(account).toEqual({
-      tier: 'NOTEBOOKLM_TIER_PRO',
+      tier: 'GEMINI_NOTEBOOK_TIER_PRO',
       tierCode: 2,
       tierLabel: 'Pro',
       notebookLimit: 500,

@@ -1,5 +1,5 @@
 /**
- * Import Google/NotebookLM session cookies from a local Google Chrome profile
+ * Import Google/Gemini Notebook session cookies from a local Google Chrome profile
  * on macOS, producing a Playwright-compatible `StorageState`.
  *
  * Why this exists: Google blocks sign-in inside Playwright-controlled browsers

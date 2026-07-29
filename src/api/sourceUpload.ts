@@ -17,7 +17,7 @@ import { getUploadUrl } from '../rpc/types.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Extension → MIME for the upload `start` handshake (NotebookLM's accepted types). */
+/** Extension → MIME for the upload `start` handshake (Gemini Notebook's accepted types). */
 const MIME_BY_EXT: Record<string, string> = {
   '.pdf': 'application/pdf',
   '.txt': 'text/plain',
@@ -84,7 +84,7 @@ export function guessUploadContentType(filename: string, override?: string): str
 }
 
 /**
- * Reject local file types known to fail NotebookLM's upload endpoint (HTML).
+ * Reject local file types known to fail Gemini Notebook's upload endpoint (HTML).
  * Throws with a remediation hint; callers surface it as a usage error.
  */
 export function assertUploadFileSupported(filename: string, contentType: string): void {
@@ -92,7 +92,7 @@ export function assertUploadFileSupported(filename: string, contentType: string)
   const normalized = (contentType.split(';', 1)[0] ?? '').trim().toLowerCase();
   if (HTML_SUFFIXES.has(ext) || HTML_CONTENT_TYPES.has(normalized)) {
     throw new Error(
-      `HTML file uploads are not supported by NotebookLM's upload endpoint: ${filename}. Convert the page to .txt, .md, or .pdf first, then retry.`,
+      `HTML file uploads are not supported by Gemini Notebook's upload endpoint: ${filename}. Convert the page to .txt, .md, or .pdf first, then retry.`,
     );
   }
 }

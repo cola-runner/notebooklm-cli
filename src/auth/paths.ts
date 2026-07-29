@@ -1,20 +1,20 @@
 /**
  * Filesystem paths for auth storage.
  *
- * Default location: `~/.config/notebooklm-cli/storage_state.json`.
- * Override via `NOTEBOOKLM_STORAGE` env var.
+ * Default location: `~/.config/gemini-notebook-cli/storage_state.json`.
+ * Override via `GEMINI_NOTEBOOK_STORAGE` env var.
  */
 
 import { mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 
-export const STORAGE_ENV_VAR = 'NOTEBOOKLM_STORAGE';
-export const REFRESH_CMD_ENV_VAR = 'NOTEBOOKLM_REFRESH_CMD';
-export const DISABLE_KEEPALIVE_ENV_VAR = 'NOTEBOOKLM_DISABLE_KEEPALIVE_POKE';
+export const STORAGE_ENV_VAR = 'GEMINI_NOTEBOOK_STORAGE';
+export const REFRESH_CMD_ENV_VAR = 'GEMINI_NOTEBOOK_REFRESH_CMD';
+export const DISABLE_KEEPALIVE_ENV_VAR = 'GEMINI_NOTEBOOK_DISABLE_KEEPALIVE_POKE';
 
 export function defaultStoragePath(): string {
-  return join(homedir(), '.config', 'notebooklm-cli', 'storage_state.json');
+  return join(homedir(), '.config', 'gemini-notebook-cli', 'storage_state.json');
 }
 
 export function getStoragePath(): string {

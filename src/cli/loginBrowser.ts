@@ -1,13 +1,13 @@
 /**
  * Auto-capture login — the closest thing to a one-click ("OAuth-style") sign-in.
  *
- * NotebookLM has no public API or OAuth scope; its internal RPC backend only
+ * Gemini Notebook has no public API or OAuth scope; its internal RPC backend only
  * accepts a real browser session cookie. So instead of asking the user to copy
  * a cURL by hand, we open their real Chrome/Edge/Brave, let them sign in
  * normally, and read the resulting cookies — already decrypted, so no OS
  * keychain access is needed.
  *
- * This mirrors `notebooklm-py`'s `notebooklm login` (cli/session.py): Playwright
+ * This mirrors `notebooklm-py`'s browser login flow (cli/session.py): Playwright
  * drives the *real* browser (via `executablePath`, not the bundled Chromium)
  * with the automation markers stripped (`--disable-blink-features=
  * AutomationControlled` + dropping `--enable-automation`), so Google's "this
@@ -41,7 +41,7 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Whether a browser URL is an authenticated NotebookLM/Gemini Notebook destination. */
+/** Whether a browser URL is an authenticated Gemini Notebook destination. */
 export function isNotebookAppUrl(rawUrl: string, baseUrl = getBaseUrl()): boolean {
   try {
     const host = new URL(rawUrl).hostname;
@@ -104,13 +104,13 @@ async function captureSession(
       return { cookies: settled.map(toStoredCookie), origins: [] };
     }
     if (!announced && cookies.length > 0) {
-      console.error('  …signed in to Google, waiting for the NotebookLM session…');
+      console.error('  …signed in to Google, waiting for the Gemini Notebook session…');
       announced = true;
     }
     await delay(POLL_INTERVAL_MS);
   }
   throw new Error(
-    'Timed out waiting for sign-in. Re-run `notebooklm login` and complete Google sign-in in the window.',
+    'Timed out waiting for sign-in. Re-run `gemini-notebook login` and complete Google sign-in in the window.',
   );
 }
 
@@ -122,7 +122,7 @@ async function loadChromium() {
     throw new Error(
       'Browser login needs the optional "playwright" package, which is not installed.\n' +
         '  Install it:  npm i -g playwright && playwright install chromium\n' +
-        '  Or sign in headless instead:  notebooklm login --paste',
+        '  Or sign in headless instead:  gemini-notebook login --paste',
     );
   }
 }
@@ -132,7 +132,7 @@ export async function runBrowserLogin(opts: BrowserLoginOptions = {}): Promise<v
   if (!choice) {
     throw new Error(
       'No Chromium-family browser found (Chrome / Edge / Brave / Chromium).\n' +
-        '  Install one, or sign in with: notebooklm login --paste',
+        '  Install one, or sign in with: gemini-notebook login --paste',
     );
   }
 
@@ -140,7 +140,7 @@ export async function runBrowserLogin(opts: BrowserLoginOptions = {}): Promise<v
   const profileDir = loginProfileDir(storagePath);
   ensureStorageDir(storagePath);
 
-  console.error(`Opening ${choice.name} — sign in to NotebookLM in the new window.`);
+  console.error(`Opening ${choice.name} — sign in to Gemini Notebook in the new window.`);
   console.error('(Nothing is typed for you; I only read the session cookie once you are in.)');
 
   // Drive the *real* browser with automation markers stripped, so Google does
@@ -168,7 +168,7 @@ export async function runBrowserLogin(opts: BrowserLoginOptions = {}): Promise<v
     if (opts.verify !== undefined) saveOpts.verify = opts.verify;
     saveOpts.storagePath = storagePath;
     await verifyAndSave(state, saveOpts);
-    console.error('  Done — closing the helper window. Try:  notebooklm list');
+    console.error('  Done — closing the helper window. Try:  gemini-notebook list');
   } finally {
     // Keep the persistent profile on disk so the next login stays signed in.
     await context.close().catch(() => undefined);

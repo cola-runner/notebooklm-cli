@@ -1,5 +1,5 @@
 /**
- * Encode RPC requests for the NotebookLM batchexecute API.
+ * Encode RPC requests for the Gemini Notebook batchexecute API.
  *
  * Ported from `notebooklm-py/src/notebooklm/rpc/encoder.py`. The wire format
  * is a triple-nested JSON array `[[[rpc_id, json_params, null, "generic"]]]`

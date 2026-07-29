@@ -160,7 +160,7 @@ export class ChatAPI {
   /**
    * Build the `conversation_history` payload for a follow-up from cached turns.
    * Each turn contributes `[answer, null, 2]` then `[query, null, 1]` (the wire
-   * order NotebookLM expects). Returns null when nothing is cached.
+   * order Gemini Notebook expects). Returns null when nothing is cached.
    */
   private buildConversationHistory(conversationId: string): unknown[] | null {
     const turns = this.conversations.get(conversationId);

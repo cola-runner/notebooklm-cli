@@ -90,7 +90,7 @@ export class SourcesAPI {
 
   /**
    * Add a local file (PDF, image, docx, audio, …) as a source via Google's
-   * resumable upload, so NotebookLM ingests the real bytes natively.
+   * resumable upload, so Gemini Notebook ingests the real bytes natively.
    *
    * Three steps: register the source (ADD_SOURCE_FILE → SOURCE_ID), open a
    * resumable upload session, then stream the bytes to it. Returns the new

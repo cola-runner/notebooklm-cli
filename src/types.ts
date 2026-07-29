@@ -143,7 +143,7 @@ export interface AskResult {
  * by the authoritative limits block in GET_USER_SETTINGS.
  */
 export interface UserAccount {
-  /** Backward-compatible symbolic tier derived from `tierCode`. */
+  /** Symbolic tier derived from `tierCode`. */
   tier?: string;
   /** Raw positive integer from GET_USER_SETTINGS limits[4]. */
   tierCode?: number;
@@ -166,7 +166,7 @@ export interface PromptSuggestion {
 }
 
 /**
- * A NotebookLM source label — a topic grouping of the sources within a notebook.
+ * A Gemini Notebook source label — a topic grouping of the sources within a notebook.
  * Notebook-scoped; membership is many-to-many (a source may be in several
  * labels, and a label owns a list of source ids).
  */

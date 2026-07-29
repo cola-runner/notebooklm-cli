@@ -9,9 +9,9 @@ const MAX_RESPONSE_PREVIEW = 4096;
 
 export function truncateResponsePreview(raw: string | undefined): string | undefined {
   if (raw == null) return undefined;
-  if (process.env['NOTEBOOKLM_DEBUG'] === '1') return raw;
+  if (process.env['GEMINI_NOTEBOOK_DEBUG'] === '1') return raw;
   if (raw.length <= MAX_RESPONSE_PREVIEW) return raw;
-  return `${raw.slice(0, MAX_RESPONSE_PREVIEW)}… [truncated; set NOTEBOOKLM_DEBUG=1 for full]`;
+  return `${raw.slice(0, MAX_RESPONSE_PREVIEW)}… [truncated; set GEMINI_NOTEBOOK_DEBUG=1 for full]`;
 }
 
 export interface RPCErrorOptions {

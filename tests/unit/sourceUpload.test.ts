@@ -111,10 +111,10 @@ describe('extractFileSourceId', () => {
 
 describe('validateResumableUploadUrl with a custom base URL', () => {
   beforeEach(() => {
-    process.env['NOTEBOOKLM_BASE_URL'] = 'https://notebooklm.google.com';
+    process.env['GEMINI_NOTEBOOK_BASE_URL'] = 'https://notebooklm.google.com';
   });
   afterEach(() => {
-    process.env['NOTEBOOKLM_BASE_URL'] = undefined;
+    process.env['GEMINI_NOTEBOOK_BASE_URL'] = undefined;
   });
 
   it('still validates against the configured endpoint', () => {
