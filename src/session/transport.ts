@@ -19,7 +19,7 @@ import { CookieJar } from 'tough-cookie';
 import { request } from 'undici';
 import { buildCookieHeader, homepageHeaders, rotateCookies, rpcHeaders } from '../auth/index.js';
 import type { StorageState, StoredCookie } from '../auth/types.js';
-import { getBaseUrl } from '../env.js';
+import { ALLOWED_BASE_HOSTS, getBaseUrl } from '../env.js';
 import { AuthError, NetworkError, RPCError, RateLimitError, ServerError } from '../rpc/errors.js';
 import { computeBackoffMs, parseRetryAfter } from './backoff.js';
 
@@ -263,12 +263,17 @@ export class Transport {
         const location = Array.isArray(loc) ? loc[0] : loc;
         if (!location) return res;
         await res.body.text();
-        url = new URL(location, url).toString();
+        const redirectUrl = new URL(location, url);
+        url = redirectUrl.toString();
+        if (ALLOWED_BASE_HOSTS.has(redirectUrl.host)) {
+          if ('Origin' in init.headers) init.headers['Origin'] = redirectUrl.origin;
+          if ('Referer' in init.headers) init.headers['Referer'] = `${redirectUrl.origin}/`;
+        }
         // Send cookies scoped to the *hop's* host. A homepage → /login →
         // accounts.google.com/ServiceLogin bounce needs the accounts.google.com
         // cookies (not Gemini Notebook's) to complete the passive re-auth that mints
         // the service OSID; sending the wrong host's cookies loops forever.
-        init.headers['Cookie'] = this.cookieHeaderFor(new URL(url).host);
+        init.headers['Cookie'] = this.cookieHeaderFor(redirectUrl.host);
         continue;
       }
       return res;

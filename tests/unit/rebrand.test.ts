@@ -21,7 +21,7 @@ describe('Gemini Notebook public identity', () => {
     };
 
     expect(pkg.name).toBe('@cola_runner/gemini-notebook-cli');
-    expect(pkg.version).toBe('0.2.0');
+    expect(pkg.version).toBe('0.2.1');
     expect(pkg.bin).toEqual({ 'gemini-notebook': './dist/cli/index.js' });
   });
 

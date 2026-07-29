@@ -1,6 +1,6 @@
 {
   "name": "@cola_runner/gemini-notebook-cli",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Agent-first unofficial Gemini Notebook client for Node.js — JSON CLI, citations, multi-turn chat, all studio artifacts, research & notes",
   "keywords": [
     "gemini-notebook",

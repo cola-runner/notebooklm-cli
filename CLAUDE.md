@@ -116,4 +116,5 @@ bugs that the live backend silently swallows.
 - `GEMINI_NOTEBOOK_DEBUG=1` — verbose redirect/download logging; disables response-preview truncation.
 - `GEMINI_NOTEBOOK_STRICT_DECODE=1` — make `safeIndex` throw on OOB to surface response-shape drift.
 - `GEMINI_NOTEBOOK_HL` — default interface language for artifact generation (default `en`).
-- `GEMINI_NOTEBOOK_BASE_URL` — base URL; host is allowlisted to `notebooklm.google.com`.
+- `GEMINI_NOTEBOOK_BASE_URL` — base URL; hosts are allowlisted to the current
+  `notebook.google.com` and legacy `notebooklm.google.com` app domains.

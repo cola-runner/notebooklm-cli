@@ -4,7 +4,7 @@
  * Ported from `notebooklm-py/src/notebooklm/_env.py`.
  */
 
-export const DEFAULT_BASE_URL = 'https://notebooklm.google.com';
+export const DEFAULT_BASE_URL = 'https://notebook.google.com';
 
 const ENV_VAR = 'GEMINI_NOTEBOOK_BASE_URL';
 
@@ -12,7 +12,10 @@ const ENV_VAR = 'GEMINI_NOTEBOOK_BASE_URL';
  * Hosts allowed for the base URL. Override gating uses this set as a defense
  * in depth so RPC ID overrides never leak to untrusted endpoints.
  */
-export const ALLOWED_BASE_HOSTS: ReadonlySet<string> = new Set(['notebooklm.google.com']);
+export const ALLOWED_BASE_HOSTS: ReadonlySet<string> = new Set([
+  'notebook.google.com',
+  'notebooklm.google.com',
+]);
 
 export function getBaseUrl(): string {
   const raw = process.env[ENV_VAR];

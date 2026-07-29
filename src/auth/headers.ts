@@ -12,7 +12,7 @@ export const BROWSER_USER_AGENT =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) ' +
   'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36';
 
-/** Default headers attached to every authed request to notebooklm.google.com. */
+/** Default headers attached to every authenticated Gemini Notebook request. */
 export function baseHeaders(): Record<string, string> {
   const baseUrl = getBaseUrl();
   return {

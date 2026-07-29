@@ -23,7 +23,7 @@ import { findChromiumBrowser } from '../auth/browserLocator.js';
 import { ensureStorageDir, getStoragePath, loginProfileDir } from '../auth/paths.js';
 import { findMissingRequiredCookies } from '../auth/storage.js';
 import type { StorageState, StoredCookie } from '../auth/types.js';
-import { getBaseUrl } from '../env.js';
+import { ALLOWED_BASE_HOSTS, getBaseUrl } from '../env.js';
 import { type VerifyAndSaveOptions, verifyAndSave } from './loginShared.js';
 
 export interface BrowserLoginOptions {
@@ -46,9 +46,8 @@ export function isNotebookAppUrl(rawUrl: string, baseUrl = getBaseUrl()): boolea
   try {
     const host = new URL(rawUrl).hostname;
     const baseHost = new URL(baseUrl).hostname;
-    return (
-      host === baseHost || (baseHost === 'notebooklm.google.com' && host === 'notebook.google.com')
-    );
+    if (ALLOWED_BASE_HOSTS.has(baseHost)) return ALLOWED_BASE_HOSTS.has(host);
+    return host === baseHost;
   } catch {
     return false;
   }

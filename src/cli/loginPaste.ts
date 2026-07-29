@@ -1,5 +1,6 @@
 /**
- * Cookie-paste login flow — the recommended way to authenticate.
+ * Cookie-paste login flow — a cross-platform fallback when browser capture
+ * and local browser-cookie import are unavailable.
  *
  * The user copies a request as cURL from their normal, already-signed-in
  * browser (DevTools → Network → right-click → "Copy as cURL") and pastes it
@@ -29,9 +30,9 @@ export interface PasteLoginOptions {
 const INSTRUCTIONS = `
 gemini-notebook login — paste your browser session
 ──────────────────────────────────────────────
-  1. Open https://notebooklm.google.com in your normal browser (signed in).
+  1. Open https://notebook.google.com in your normal browser (signed in).
   2. Open DevTools (F12 / Cmd-Opt-I) and switch to the Network tab.
-  3. Reload the page, then right-click any request to notebooklm.google.com.
+  3. Reload the page, then right-click any request to notebook.google.com.
   4. Choose  Copy → Copy as cURL  (use the "bash" variant on Windows).
   5. Paste it below, then press Enter and Ctrl-D.
 
@@ -70,7 +71,7 @@ export async function runPasteLogin(opts: PasteLoginOptions = {}): Promise<void>
     console.error(
       `\n✗ Found ${pairs.length} cookies, but none of the required session cookies (${missing.join(', ')}).
   Are you signed in to Gemini Notebook in that browser? Copy the cURL of a request
-  to notebooklm.google.com (not accounts.google.com) and try again.`,
+  to notebook.google.com (not accounts.google.com) and try again.`,
     );
     process.exit(1);
   }

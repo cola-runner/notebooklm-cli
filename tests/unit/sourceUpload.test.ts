@@ -62,7 +62,7 @@ describe('assertUploadFileSupported', () => {
 });
 
 describe('validateResumableUploadUrl', () => {
-  const ok = 'https://notebooklm.google.com/upload/_/?upload_id=ABC123';
+  const ok = 'https://notebook.google.com/upload/_/?upload_id=ABC123';
 
   it('accepts a same-host upload URL with exactly one upload_id', () => {
     expect(validateResumableUploadUrl(ok)).toBe(ok);
@@ -73,19 +73,19 @@ describe('validateResumableUploadUrl', () => {
       /host is not trusted/,
     );
     expect(() =>
-      validateResumableUploadUrl('http://notebooklm.google.com/upload/_/?upload_id=x'),
+      validateResumableUploadUrl('http://notebook.google.com/upload/_/?upload_id=x'),
     ).toThrow(/must use https/);
-    expect(() => validateResumableUploadUrl('https://notebooklm.google.com/upload/_/')).toThrow(
+    expect(() => validateResumableUploadUrl('https://notebook.google.com/upload/_/')).toThrow(
       /exactly one non-empty upload_id/,
     );
     expect(() =>
-      validateResumableUploadUrl('https://notebooklm.google.com/upload/_/?upload_id=a&upload_id=b'),
+      validateResumableUploadUrl('https://notebook.google.com/upload/_/?upload_id=a&upload_id=b'),
     ).toThrow(/exactly one non-empty upload_id/);
   });
 
   it('rejects a path outside the upload endpoint', () => {
     expect(() =>
-      validateResumableUploadUrl('https://notebooklm.google.com/steal/?upload_id=x'),
+      validateResumableUploadUrl('https://notebook.google.com/steal/?upload_id=x'),
     ).toThrow(/path is not trusted/);
   });
 });

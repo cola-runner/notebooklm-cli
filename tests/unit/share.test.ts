@@ -31,7 +31,7 @@ describe('ShareAPI.getStatus', () => {
     expect(calls[0]).toEqual({ method: 'GET_SHARE_STATUS', params: ['nb-1', [2]] });
     expect(status.isPublic).toBe(true);
     expect(status.access).toBe(1);
-    expect(status.shareUrl).toBe('https://notebooklm.google.com/notebook/nb-1');
+    expect(status.shareUrl).toBe('https://notebook.google.com/notebook/nb-1');
     expect(status.sharedUsers).toEqual([
       { email: 'a@b.com', permission: 1, displayName: 'Alice', avatarUrl: 'http://avatar' },
     ]);

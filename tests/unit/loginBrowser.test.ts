@@ -9,6 +9,9 @@ describe('isNotebookAppUrl', () => {
     expect(isNotebookAppUrl('https://notebook.google.com/', 'https://notebooklm.google.com')).toBe(
       true,
     );
+    expect(isNotebookAppUrl('https://notebooklm.google.com/', 'https://notebook.google.com')).toBe(
+      true,
+    );
   });
 
   it('keeps a configured custom base host and rejects unrelated hosts', () => {
