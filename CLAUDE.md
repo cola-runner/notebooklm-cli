@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-An **unofficial** Node.js/TypeScript client for Google NotebookLM. It talks to NotebookLM's
+An **unofficial** Node.js/TypeScript client for Gemini Notebook. It talks to Gemini Notebook's
 internal `batchexecute` RPC endpoints (no public API exists), shipped as both a programmatic
-library (`NotebookLMClient`) and an **agent-first CLI** (`notebooklm`). The protocol layer is a
+library (`GeminiNotebookClient`) and an **agent-first CLI** (`gemini-notebook`). The protocol layer is a
 TypeScript port of [notebooklm-py](https://github.com/teng-lin/notebooklm-py) — many files cite
 the upstream Python module they were ported from, and that project is the source of truth for
 wire-format details.
@@ -18,7 +18,7 @@ Package manager is **pnpm** (there is a `pnpm-lock.yaml`).
 ```bash
 pnpm dev <command...>          # run the CLI from source via tsx, no build (e.g. pnpm dev list)
 pnpm build                     # tsc -p tsconfig.build.json → dist/ (src only, excludes tests)
-pnpm test                      # vitest run (176 unit tests)
+pnpm test                      # vitest run (183 unit tests)
 pnpm test:watch                # vitest watch mode
 pnpm vitest run tests/unit/encoder.test.ts          # run a single test file
 pnpm vitest run -t 'nestSourceIds'                  # run tests matching a name
@@ -34,13 +34,13 @@ TypeScript is maximally strict (`noUncheckedIndexedAccess`, `exactOptionalProper
 
 ## Architecture
 
-The stack is strictly layered; a request flows **CLI → NotebookLMClient → feature API → Session →
+The stack is strictly layered; a request flows **CLI → GeminiNotebookClient → feature API → Session →
 Transport → RPC encode/decode**.
 
 - **`src/rpc/`** — the wire protocol, ported verbatim from notebooklm-py.
   - `types.ts` holds the **obfuscated RPC method IDs** (`RPCMethod`, e.g. `LIST_NOTEBOOKS:
     'wXbhsf'`) plus all artifact/format enums. Google changes these IDs without notice; this file
-    must be kept in sync with upstream. **Escape hatch:** the `NOTEBOOKLM_RPC_OVERRIDES` env var
+    must be kept in sync with upstream. **Escape hatch:** the `GEMINI_NOTEBOOK_RPC_OVERRIDES` env var
     (`overrides.ts`) patches IDs at runtime without a release.
   - `encoder.ts` builds the `f.req` body — the format is a triple-nested array
     `[[[rpcId, jsonParams, null, "generic"]]]`, URL-encoded. `nestSourceIds(ids, depth)` wraps
@@ -50,25 +50,26 @@ Transport → RPC encode/decode**.
   - **Request/response params are position-sensitive nested arrays** (`[[2], notebookId, [null,
     null, typeCode, …]]`). Positions and `null` padding matter — an off-by-one silently makes the
     backend drop config and return no result. Read with `safeIndex()` (returns `undefined` OOB; set
-    `NOTEBOOKLM_STRICT_DECODE=1` to throw and catch shape regressions in dev).
+    `GEMINI_NOTEBOOK_STRICT_DECODE=1` to throw and catch shape regressions in dev).
 - **`src/session/`** — `Session` caches auth tokens (CSRF + session id, 25-min TTL, lazily
   re-extracted from the homepage HTML), dispatches RPC calls, and retries once on `AuthError`.
   `Transport` (undici) owns cookies, Set-Cookie persistence, retry/backoff for 429/5xx + transient
   socket faults, the keepalive `RotateCookies` poke, and the multi-hop signed-URL download chain.
 - **`src/api/`** — one class per feature domain (`notebooks`, `sources`, `chat`, `artifacts`,
   `notes`, `share`, `research`, `user`), each constructed with a `Session` and exposed as a field
-  on `NotebookLMClient` (`src/client.ts`). API methods build the nested params, call
+  on `GeminiNotebookClient` (`src/client.ts`). API methods build the nested params, call
   `session.call('METHOD_NAME', params, { allowNull? })`, and parse the result. Artifact rows retain
   their type-specific generation prompt, exposed through `artifacts.getPrompt()`. `user.whoami()`
   reads tier code and quotas from the single authoritative `GET_USER_SETTINGS` limits block.
 - **`src/cli/`** — `index.ts` wires up Commander; `artifactCommands.ts` registers the
   `generate`/`artifact`/`download` subtrees. `output.ts` defines the agent contract (see below).
 - **`src/auth/`** — `storage_state.json` is Playwright-compatible (same shape as
-  `BrowserContext.storageState()`). Default path `~/.config/notebooklm-cli/storage_state.json`,
-  overridable via `--storage` or `NOTEBOOKLM_STORAGE`. Login has three paths: browser auto-capture
+  `BrowserContext.storageState()`). Default path `~/.config/gemini-notebook-cli/storage_state.json`,
+  overridable via `--storage` or `GEMINI_NOTEBOOK_STORAGE`. Login has three paths: browser auto-capture
   (`loginBrowser.ts`, the only thing needing Playwright — an optional peer dep), paste-a-cURL
   (`loginPaste.ts` / `curlCookies.ts`), and macOS Chrome cookie decrypt (`chromeCookies.ts`).
-  Browser login accepts both `notebooklm.google.com` and the rebranded `notebook.google.com` app
+  Browser login accepts both the legacy `notebooklm.google.com` host and the current
+  `notebook.google.com` app
   destination and waits only for navigation commit because the streaming SPA may never fire load.
 
 ### Three HTTP paths, not one
@@ -110,9 +111,9 @@ bugs that the live backend silently swallows.
 
 ## Useful env vars
 
-- `NOTEBOOKLM_RPC_OVERRIDES` — JSON map of `MethodName → rpcId` to patch drifted IDs.
-- `NOTEBOOKLM_STORAGE` — override the storage_state.json path.
-- `NOTEBOOKLM_DEBUG=1` — verbose redirect/download logging; disables response-preview truncation.
-- `NOTEBOOKLM_STRICT_DECODE=1` — make `safeIndex` throw on OOB to surface response-shape drift.
-- `NOTEBOOKLM_HL` — default interface language for artifact generation (default `en`).
-- `NOTEBOOKLM_BASE_URL` — base URL; host is allowlisted to `notebooklm.google.com`.
+- `GEMINI_NOTEBOOK_RPC_OVERRIDES` — JSON map of `MethodName → rpcId` to patch drifted IDs.
+- `GEMINI_NOTEBOOK_STORAGE` — override the storage_state.json path.
+- `GEMINI_NOTEBOOK_DEBUG=1` — verbose redirect/download logging; disables response-preview truncation.
+- `GEMINI_NOTEBOOK_STRICT_DECODE=1` — make `safeIndex` throw on OOB to surface response-shape drift.
+- `GEMINI_NOTEBOOK_HL` — default interface language for artifact generation (default `en`).
+- `GEMINI_NOTEBOOK_BASE_URL` — base URL; host is allowlisted to `notebooklm.google.com`.

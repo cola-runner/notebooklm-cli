@@ -1,25 +1,26 @@
 <div align="center">
 
-# 📓 notebooklm-cli
+# 📓 gemini-notebook-cli
 
-### The **agent-first** NotebookLM client for Node.js & TypeScript
+### The **agent-first** Gemini Notebook client for Node.js & TypeScript
 
-Drive Google NotebookLM from your terminal or your code — with a **JSON-first CLI
+Drive Gemini Notebook from your terminal or your code — with a **JSON-first CLI
 purpose-built for LLM agents**: structured output, machine-readable errors, and
 exit codes you can branch on.
 
 [![Built for agents](https://img.shields.io/badge/built%20for-LLM%20agents-8A2BE2.svg)](#-built-for-ai-agents)
-[![npm](https://img.shields.io/npm/v/@cola_runner/notebooklm-cli?color=CB3837&logo=npm)](https://www.npmjs.com/package/@cola_runner/notebooklm-cli)
+[![npm](https://img.shields.io/npm/v/@cola_runner/gemini-notebook-cli?color=CB3837&logo=npm)](https://www.npmjs.com/package/@cola_runner/gemini-notebook-cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-3C873A.svg)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6.svg)](tsconfig.json)
-[![Tests](https://img.shields.io/badge/tests-176%20passing-2EA44F.svg)](tests)
+[![Tests](https://img.shields.io/badge/tests-183%20passing-2EA44F.svg)](tests)
 
 </div>
 
-> ⚠️ **Unofficial.** This talks to Google NotebookLM's internal RPC endpoints,
+> ⚠️ **Unofficial.** This talks to Gemini Notebook's internal RPC endpoints,
 > which can change without notice. Not affiliated with or endorsed by Google.
 > Inspired by [notebooklm-py](https://github.com/teng-lin/notebooklm-py).
+> Gemini Notebook was formerly known as NotebookLM.
 
 ---
 
@@ -36,7 +37,7 @@ Most CLIs are written for a human to *read*. This one is written for an **agent 
 | Exit | Code | Meaning | Agent action |
 |:---:|---|---|---|
 | `0` | `OK` | success | use the JSON result |
-| `3` | `AUTH` | session expired/rejected | run `notebooklm login` |
+| `3` | `AUTH` | session expired/rejected | run `gemini-notebook login` |
 | `4` | `NOT_FOUND` | resource missing | stop / report |
 | `5` | `NOT_READY` | artifact still generating | poll again later |
 | `6` | `RATE_LIMIT` | throttled | back off and retry |
@@ -45,10 +46,10 @@ Most CLIs are written for a human to *read*. This one is written for an **agent 
 
 ```bash
 # An agent driving the CLI — branch on the exit code, parse stdout as JSON.
-out=$(notebooklm ask "$NB" "Summarize the latest source" --json); code=$?
+out=$(gemini-notebook ask "$NB" "Summarize the latest source" --json); code=$?
 case $code in
   0) echo "$out" | jq -r '.answer, (.references[] | "  ["+(.citationNumber|tostring)+"] "+.sourceId)' ;;
-  3) notebooklm login ;;     # AUTH  → refresh session, retry
+  3) gemini-notebook login ;;     # AUTH  → refresh session, retry
   6) sleep 30 ;;             # RATE_LIMIT → back off
   *) echo "$out" | jq -r '.error.message' >&2 ;;
 esac
@@ -63,8 +64,8 @@ Progress goes to **stderr**, results to **stdout** — pipe one without the othe
 - 🔑 **Keychain-free login** — sign in through your real browser (cookies are read
   *after* you log in; nothing is decrypted off disk) or paste a "Copy as cURL".
   No OS-keychain prompt, so it works for anyone — not just the machine that made
-  the session. Browser login follows both the legacy NotebookLM host and the
-  rebranded Gemini Notebook host.
+  the session. Browser login follows both the legacy Google host and the current
+  Gemini Notebook host.
 - 📚 **Grounded chat** — answers carry real **citations** (source id, cited
   passage, character ranges, relevance score) and support **multi-turn**
   conversations via `ask --conversation-id`.
@@ -78,14 +79,19 @@ Progress goes to **stderr**, results to **stdout** — pipe one without the othe
 - 🔬 **Research · notes · sharing** — web/Drive research discovery + import (with
   **cancel**), notes CRUD, and public-link sharing.
 - 🧱 **Solid by construction** — TypeScript strict mode, `undici` transport with
-  network-fault classification + retry, and **176 unit tests** that pin the
+  network-fault classification + retry, and **183 unit tests** that pin the
   position-sensitive wire format against captured fixtures.
 
 ---
 
-## 🆕 What's new — v0.1.4 upstream sync
+## 🆕 What's new — v0.2.0 Gemini Notebook rebrand
 
-- Browser login recognizes the July 2026 **Gemini Notebook** host
+- Package renamed to `@cola_runner/gemini-notebook-cli`, with the
+  `gemini-notebook` executable and `GeminiNotebookClient` SDK entry point.
+- Runtime configuration now uses `GEMINI_NOTEBOOK_*` and
+  `~/.config/gemini-notebook-cli`; this release intentionally provides no legacy
+  aliases or storage migration.
+- Browser login recognizes the current **Gemini Notebook** host
   (`notebook.google.com`) and no longer waits for the streaming app's `load` event.
 - Generate vertical short-form videos with `generate video --format short`.
 - Read the original prompt behind any studio artifact with `artifact get-prompt`.
@@ -94,10 +100,10 @@ Progress goes to **stderr**, results to **stdout** — pipe one without the othe
 
 ---
 
-## 🆕 What's new — the 2026-06 NotebookLM update
+## 🆕 What's new — the 2026-06 product update
 
 Google's [June 2026 update](https://techcrunch.com/2026/06/08/notebooklms-new-update-will-help-you-build-source-repository-from-chat/)
-turned NotebookLM into an agentic researcher: **Gemini 3.5** as the default model,
+turned Gemini Notebook into an agentic researcher: **Gemini 3.5** as the default model,
 **chat-driven source discovery**, **in-notebook code execution**, transparent
 reasoning, and a wider set of export formats (`.docx`, Excel, PowerPoint, charts,
 images). These are rolling out to **AI Ultra** and **Workspace business** accounts
@@ -105,7 +111,7 @@ first, then everyone.
 
 Two things follow for this CLI:
 
-- **`notebooklm whoami`** tells you which rollout your account is in — your
+- **`gemini-notebook whoami`** tells you which rollout your account is in — your
   subscription tier code plus notebook/source quotas. Use it to check whether the
   new agentic features are live for you yet.
 - The new server-side capabilities (source discovery, code execution, the new
@@ -115,8 +121,8 @@ Two things follow for this CLI:
   — no CLI change needed.
 
 ```bash
-notebooklm whoami --json
-# { "tier": "NOTEBOOKLM_TIER_ULTRA", "tierCode": 6, "tierLabel": "Ultra", "notebookLimit": …, "sourceLimit": … }
+gemini-notebook whoami --json
+# { "tier": "GEMINI_NOTEBOOK_TIER_ULTRA", "tierCode": 6, "tierLabel": "Ultra", "notebookLimit": …, "sourceLimit": … }
 ```
 
 ---
@@ -124,39 +130,39 @@ notebooklm whoami --json
 ## 🚀 Install
 
 ```bash
-npm install -g @cola_runner/notebooklm-cli     # global `notebooklm` command
+npm install -g @cola_runner/gemini-notebook-cli     # global `gemini-notebook` command
 # …or run without installing:
-npx @cola_runner/notebooklm-cli login
+npx @cola_runner/gemini-notebook-cli login
 ```
 
 The core install is tiny — just `commander` / `undici` / `tough-cookie`, no
 browser. That's all an agent needs: authenticate headless with
-`notebooklm login --paste` (paste a "Copy as cURL"/Cookie header), then every
+`gemini-notebook login --paste` (paste a "Copy as cURL"/Cookie header), then every
 other command is pure HTTP.
 
 The one-click **browser** login is optional and needs Playwright:
 
 ```bash
-npm i -g playwright && playwright install chromium   # only for `notebooklm login`
+npm i -g playwright && playwright install chromium   # only for `gemini-notebook login`
 ```
 
 <details>
 <summary><b>From source (contributors)</b></summary>
 
 ```bash
-git clone https://github.com/cola-runner/notebooklm-cli.git && cd notebooklm-cli
+git clone https://github.com/cola-runner/gemini-notebook-cli.git && cd gemini-notebook-cli
 pnpm install
 pnpm build
 pnpm playwright install chromium     # one-time, for browser login
-npm link                             # puts `notebooklm` on your PATH
+npm link                             # puts `gemini-notebook` on your PATH
 ```
 
 > No build step while hacking? Use `pnpm dev <command>` to run straight from source.
 </details>
 
 ```bash
-notebooklm login           # browser sign-in (or `login --paste` for headless)
-notebooklm list            # confirm it worked
+gemini-notebook login           # browser sign-in (or `login --paste` for headless)
+gemini-notebook list            # confirm it worked
 ```
 
 ---
@@ -165,59 +171,59 @@ notebooklm list            # confirm it worked
 
 ```bash
 # Auth
-notebooklm login                      # browser auto-capture (no keychain)
-notebooklm login --paste              # or paste a "Copy as cURL" / Cookie header
-notebooklm status                     # check auth state
-notebooklm whoami                     # show your subscription tier + quotas
+gemini-notebook login                      # browser auto-capture (no keychain)
+gemini-notebook login --paste              # or paste a "Copy as cURL" / Cookie header
+gemini-notebook status                     # check auth state
+gemini-notebook whoami                     # show your subscription tier + quotas
 
 # Notebooks
-notebooklm list
-notebooklm create "My research"
-notebooklm rename <nb> "New title"
-notebooklm delete <nb>
+gemini-notebook list
+gemini-notebook create "My research"
+gemini-notebook rename <nb> "New title"
+gemini-notebook delete <nb>
 
 # Sources
-notebooklm source add <nb> --url https://en.wikipedia.org/wiki/SpaceX
-notebooklm source add <nb> --text "..." --title "Notes"
-notebooklm source add <nb> --file ./paper.pdf --wait   # upload a real PDF/image/docx/audio
-notebooklm source list <nb>
-notebooklm source list <nb> --label "Tax docs"          # only sources in a label
+gemini-notebook source add <nb> --url https://en.wikipedia.org/wiki/SpaceX
+gemini-notebook source add <nb> --text "..." --title "Notes"
+gemini-notebook source add <nb> --file ./paper.pdf --wait   # upload a real PDF/image/docx/audio
+gemini-notebook source list <nb>
+gemini-notebook source list <nb> --label "Tax docs"          # only sources in a label
 
 # Labels (group a notebook's sources by topic)
-notebooklm label list <nb>
-notebooklm label create <nb> "Tax docs" --emoji 📁
-notebooklm label generate <nb>                          # AI auto-grouping (unlabeled sources)
-notebooklm label assign <nb> <labelId> <sourceId...>
-notebooklm label unassign <nb> <labelId> <sourceId...>
-notebooklm label delete <nb> <labelId...>
+gemini-notebook label list <nb>
+gemini-notebook label create <nb> "Tax docs" --emoji 📁
+gemini-notebook label generate <nb>                          # AI auto-grouping (unlabeled sources)
+gemini-notebook label assign <nb> <labelId> <sourceId...>
+gemini-notebook label unassign <nb> <labelId> <sourceId...>
+gemini-notebook label delete <nb> <labelId...>
 
 # Chat (with citations + follow-ups)
-notebooklm ask <nb> "What is this about?"
-notebooklm ask <nb> "And what about that?" --conversation-id <id>
-notebooklm suggest-prompts <nb>                          # AI-suggested questions to ask
+gemini-notebook ask <nb> "What is this about?"
+gemini-notebook ask <nb> "And what about that?" --conversation-id <id>
+gemini-notebook suggest-prompts <nb>                          # AI-suggested questions to ask
 
 # Notes
-notebooklm note create <nb> --title "T" --content "..."
-notebooklm note list <nb>
+gemini-notebook note create <nb> --title "T" --content "..."
+gemini-notebook note list <nb>
 
 # Sharing
-notebooklm share public <nb>          # anyone-with-link; prints the share URL
-notebooklm share status <nb>
+gemini-notebook share public <nb>          # anyone-with-link; prints the share URL
+gemini-notebook share status <nb>
 
 # Research (web/Drive discovery → import)
-notebooklm research start <nb> "history of the Falcon 9" --wait
-notebooklm research import <nb> <taskId> --limit 5
-notebooklm research cancel <nb> <taskId>                 # stop an in-flight run
+gemini-notebook research start <nb> "history of the Falcon 9" --wait
+gemini-notebook research import <nb> <taskId> --limit 5
+gemini-notebook research cancel <nb> <taskId>                 # stop an in-flight run
 
 # Studio artifacts — generate & download
-notebooklm generate audio <nb> --format deep-dive --wait
-notebooklm generate video <nb> --format short --wait
-notebooklm generate report <nb> --format study-guide --wait
-notebooklm artifact list <nb>
-notebooklm artifact get-prompt <nb> <artifactId>        # show the original generation prompt
-notebooklm artifact retry <nb> <artifactId>             # re-run a failed artifact
-notebooklm download audio <nb> ./overview.mp4
-notebooklm download slide-deck <nb> ./deck.pdf
+gemini-notebook generate audio <nb> --format deep-dive --wait
+gemini-notebook generate video <nb> --format short --wait
+gemini-notebook generate report <nb> --format study-guide --wait
+gemini-notebook artifact list <nb>
+gemini-notebook artifact get-prompt <nb> <artifactId>        # show the original generation prompt
+gemini-notebook artifact retry <nb> <artifactId>             # re-run a failed artifact
+gemini-notebook download audio <nb> ./overview.mp4
+gemini-notebook download slide-deck <nb> ./deck.pdf
 ```
 
 Add `--json` to any of the above for machine-readable output.
@@ -227,9 +233,9 @@ Add `--json` to any of the above for machine-readable output.
 ## 🧩 Programmatic API
 
 ```ts
-import { NotebookLMClient } from '@cola_runner/notebooklm-cli';
+import { GeminiNotebookClient } from '@cola_runner/gemini-notebook-cli';
 
-const client = await NotebookLMClient.fromStorage();
+const client = await GeminiNotebookClient.fromStorage();
 
 const nb = await client.notebooks.create('Research');
 await client.sources.addUrl(nb.id, 'https://en.wikipedia.org/wiki/SpaceX');

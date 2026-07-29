@@ -6,7 +6,7 @@ coverage/
 .env
 .env.local
 
-# notebooklm artifacts
+# Gemini Notebook artifacts
 storage_state.json
 *.cookies.json
 login-profile/
